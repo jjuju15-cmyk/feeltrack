@@ -1,8 +1,8 @@
 import { useState } from "react"
-import Formulaire from "./Formulaire"
+import Formulaire from "./formulaire"
 import Historique from "./historique"
 import Profil from "./profil"
-import Parametres from "./Parametres"
+import Parametres from "./parametres"
 
 // 🏅 Liste des sports
 const sports = [
