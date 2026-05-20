@@ -1,0 +1,22 @@
+/* Style global — fond et police de base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #0f0f0f;
+  color: #ffffff;
+  font-family: sans-serif;
+  min-height: 100vh;
+}
+
+/* Scrollbar discrète */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
