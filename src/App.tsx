@@ -4,84 +4,94 @@ import Historique from "./historique"
 import Profil from "./profil"
 import Parametres from "./parametres"
 
-// 🏅 Liste des sports
-const sports = [
-  { id: "tous", label: "Tous les sports", emoji: "🏅" },
-  { id: "course", label: "Course à pied", emoji: "🏃" },
-  { id: "trail", label: "Trail", emoji: "🌄" },
-  { id: "vtt", label: "VTT", emoji: "🚵" },
-  { id: "velo", label: "Vélo route", emoji: "🚴" },
-  { id: "natation", label: "Natation", emoji: "🏊" },
-  { id: "muscu", label: "Musculation", emoji: "🏋️" },
-  { id: "crossfit", label: "CrossFit", emoji: "💪" },
-]
-
-// 🎨 Couleur et message selon le score
-const getCouleur = (score: number) => {
-  if (score >= 75) return "#4CAF50"
-  if (score >= 60) return "#FFC107"
-  if (score >= 40) return "#FF9800"
+// 🎨 Couleur forme (0-100)
+const getCouleurForme = (v: number) => {
+  if (v >= 75) return "#4CAF50"
+  if (v >= 60) return "#FFC107"
+  if (v >= 40) return "#FF9800"
   return "#F44336"
 }
-const getMessage = (score: number) => {
-  if (score >= 75) return "Forme optimale — continue comme ça"
-  if (score >= 60) return "Légère fatigue — surveille ta récupération"
-  if (score >= 40) return "Charge élevée — pense à récupérer"
-  return "Surcharge détectée — repos recommandé 🛑"
+
+// 🎨 Couleur charge (0-200)
+const getCouleurCharge = (v: number) => {
+  if (v <= 30) return "#4A90E2"
+  if (v <= 60) return "#4CAF50"
+  if (v <= 90) return "#FF9800"
+  return "#F44336"
+}
+
+// 🏷️ Statut d'entraînement (méthode ACWR)
+const getStatut = (seances: any[]) => {
+  const avecDonnees = seances.filter((s: any) => s.charge !== undefined && s.forme !== undefined)
+  if (avecDonnees.length < 2) return null
+
+  const maintenant = new Date()
+  const diffJours = (d: string) =>
+    (maintenant.getTime() - new Date(d).getTime()) / (1000 * 60 * 60 * 24)
+
+  const s7j = avecDonnees.filter((s: any) => diffJours(s.date) <= 7)
+  const s28j = avecDonnees.filter((s: any) => diffJours(s.date) <= 28)
+
+  const chargeAigue = s7j.length > 0
+    ? s7j.reduce((a: number, s: any) => a + s.charge, 0) / 7
+    : 0
+  const chargeChronique = s28j.length > 0
+    ? s28j.reduce((a: number, s: any) => a + s.charge, 0) / 28
+    : chargeAigue
+
+  const acwr = chargeChronique > 0 ? chargeAigue / chargeChronique : 1.0
+  const formeMoy = avecDonnees.slice(0, 3).reduce((a: number, s: any) => a + s.forme, 0) /
+    Math.min(3, avecDonnees.length)
+
+  if (acwr > 1.5 && formeMoy < 45)
+    return { emoji: "🔴", label: "Surmenage détecté", message: "Repos obligatoire — ton corps est en surcharge", couleur: "#F44336" }
+  if (acwr > 1.3)
+    return { emoji: "🟠", label: "Charge élevée", message: "Réduis l'intensité, surveille ta récupération", couleur: "#FF9800" }
+  if (acwr < 0.8 && formeMoy < 50)
+    return { emoji: "⚪", label: "Récupération", message: "Charge faible, forme basse — récupération en cours", couleur: "#888" }
+  if (formeMoy >= 70 && acwr >= 0.8 && acwr <= 1.3)
+    return { emoji: "🟢", label: "Forme optimale", message: "Charge équilibrée et forme au top — continue !", couleur: "#4CAF50" }
+  if (acwr >= 1.0 && acwr <= 1.3 && formeMoy >= 50)
+    return { emoji: "🔵", label: "En progression", message: "Charge productive — veille à bien récupérer", couleur: "#1a73e8" }
+  return { emoji: "🟡", label: "Maintenance", message: "Charge stable — maintiens le rythme", couleur: "#FFC107" }
 }
 
 export default function App() {
   const [pageActive, setPageActive] = useState("accueil")
-  const [sportActif, setSportActif] = useState("tous")
   const [pseudo, setPseudo] = useState(localStorage.getItem("pseudo") || "")
   const [pseudoSaisi, setPseudoSaisi] = useState(!!localStorage.getItem("pseudo"))
   const [formulaireOuvert, setFormulaireOuvert] = useState(false)
   const [parametresOuverts, setParametresOuverts] = useState(false)
 
-  // 🔄 Recharger les séances et coefficients
   const seances = JSON.parse(localStorage.getItem("seances") || "[]")
-  const COEFFICIENTS = (() => {
-    const saved = localStorage.getItem("coefficients")
-    return saved ? JSON.parse(saved) : {
-      course: 0.78, trail: 0.98, vtt: 0.76, velo: 0.70,
-      natation: 0.70, muscu: 0.73, crossfit: 1.0
-    }
-  })()
 
-  // 🧮 Score selon le sport sélectionné
-  const calculerScoreAffiche = () => {
-    if (seances.length === 0) return null
-    const seancesFiltrees = sportActif === "tous"
-      ? seances.slice(0, 10)
-      : seances.filter((s: any) => s.sport === sportActif).slice(0, 10)
-    if (seancesFiltrees.length === 0) return null
-    if (sportActif === "tous" && seancesFiltrees.length < 2) return null
-    if (sportActif === "tous") {
-      const somme = seancesFiltrees.reduce((acc: number, s: any) => acc + s.score * (COEFFICIENTS[s.sport] || 0.75), 0)
-      const coefTotal = seancesFiltrees.reduce((acc: number, s: any) => acc + (COEFFICIENTS[s.sport] || 0.75), 0)
-      return { score: Math.round(somme / coefTotal), nbSeances: seancesFiltrees.length }
-    } else {
-      const moyenne = Math.round(seancesFiltrees.reduce((acc: number, s: any) => acc + s.score, 0) / seancesFiltrees.length)
-      return { score: moyenne, nbSeances: seancesFiltrees.length }
-    }
-  }
+  // Charge : moyenne par séance sur les 7 derniers jours
+  const maintenant = new Date()
+  const diffJours = (d: string) =>
+    (maintenant.getTime() - new Date(d).getTime()) / (1000 * 60 * 60 * 24)
+  const seances7j = seances.filter((s: any) => s.charge !== undefined && diffJours(s.date) <= 7)
+  const chargeHebdo = seances7j.length > 0
+    ? Math.round(seances7j.reduce((a: number, s: any) => a + s.charge, 0) / seances7j.length)
+    : null
 
-  const resultat = calculerScoreAffiche()
+  // Forme : moyenne des 3 dernières séances
+  const avecForme = seances.filter((s: any) => s.forme !== undefined)
+  const formeMoyenne = avecForme.length > 0
+    ? Math.round(avecForme.slice(0, 3).reduce((a: number, s: any) => a + s.forme, 0) / Math.min(3, avecForme.length))
+    : null
+
+  const statut = getStatut(seances)
 
   return (
     <div style={{ maxWidth: "480px", margin: "0 auto", minHeight: "100vh", position: "relative", paddingBottom: "80px" }}>
 
-      {/* ⚙️ Bouton paramètres — visible sur toutes les pages */}
+      {/* ⚙️ Bouton paramètres */}
       <button onClick={() => setParametresOuverts(true)} style={{
-        position: "fixed", top: "16px", right: "16px",
-        zIndex: 90, backgroundColor: "#1e1e1e",
-        border: "1px solid #2a2a2a", borderRadius: "50%",
-        width: "42px", height: "42px", fontSize: "18px",
-        cursor: "pointer", display: "flex", alignItems: "center",
-        justifyContent: "center"
-      }}>
-        ⚙️
-      </button>
+        position: "fixed", top: "16px", right: "16px", zIndex: 90,
+        backgroundColor: "#1e1e1e", border: "1px solid #2a2a2a", borderRadius: "50%",
+        width: "42px", height: "42px", fontSize: "18px", cursor: "pointer",
+        display: "flex", alignItems: "center", justifyContent: "center"
+      }}>⚙️</button>
 
       {/* PAGE ACCUEIL */}
       {pageActive === "accueil" && (
@@ -93,7 +103,7 @@ export default function App() {
               <p style={{ fontSize: "20px", marginBottom: "20px" }}>👋 Bienvenue !</p>
               <p style={{ fontSize: "14px", color: "#888", marginBottom: "16px" }}>Comment tu t'appelles ?</p>
               <input type="text" placeholder="Ton prénom..." value={pseudo}
-                onChange={(e) => setPseudo(e.target.value)}
+                onChange={e => setPseudo(e.target.value)}
                 style={{ width: "100%", padding: "12px", backgroundColor: "#2a2a2a", border: "1px solid #333", borderRadius: "8px", color: "white", fontSize: "16px", marginBottom: "12px", outline: "none" }} />
               <button onClick={() => { if (pseudo.trim()) { localStorage.setItem("pseudo", pseudo); setPseudoSaisi(true) } }}
                 style={{ width: "100%", padding: "14px", backgroundColor: "#4CAF50", color: "white", border: "none", borderRadius: "10px", fontSize: "16px", fontWeight: "bold", cursor: "pointer" }}>
@@ -116,42 +126,55 @@ export default function App() {
             </button>
           </div>
 
-          {/* Boutons sport en colonne */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "28px" }}>
-            {sports.map((sport) => (
-              <button key={sport.id} onClick={() => setSportActif(sport.id)} style={{
-                width: "100%", padding: "14px 16px",
-                backgroundColor: sportActif === sport.id ? "#1a73e8" : "#1e1e1e",
-                color: sportActif === sport.id ? "white" : "#aaaaaa",
-                border: sportActif === sport.id ? "1px solid #1a73e8" : "1px solid #2a2a2a",
-                borderRadius: "10px", fontSize: "15px", cursor: "pointer",
-                textAlign: "left", transition: "all 0.2s ease"
-              }}>
-                {sport.emoji} {sport.label}
-              </button>
-            ))}
-          </div>
+          {/* Tuiles Charge + Forme */}
+          {(chargeHebdo !== null || formeMoyenne !== null) ? (
+            <>
+              <div style={{ display: "flex", gap: "12px", marginBottom: "12px" }}>
+                {/* Charge */}
+                <div style={{
+                  flex: 1, backgroundColor: "#1e1e1e", borderRadius: "16px", padding: "20px",
+                  textAlign: "center", border: `2px solid ${chargeHebdo !== null ? getCouleurCharge(chargeHebdo) : "#2a2a2a"}`
+                }}>
+                  <p style={{ fontSize: "11px", color: "#888", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "1px" }}>Charge</p>
+                  <p style={{ fontSize: "52px", fontWeight: "bold", color: chargeHebdo !== null ? getCouleurCharge(chargeHebdo) : "#555", margin: 0, lineHeight: 1 }}>
+                    {chargeHebdo ?? "—"}
+                  </p>
+                  <p style={{ fontSize: "10px", color: "#555", marginTop: "6px" }}>moy. / séance · 7j</p>
+                </div>
+                {/* Forme */}
+                <div style={{
+                  flex: 1, backgroundColor: "#1e1e1e", borderRadius: "16px", padding: "20px",
+                  textAlign: "center", border: `2px solid ${formeMoyenne !== null ? getCouleurForme(formeMoyenne) : "#2a2a2a"}`
+                }}>
+                  <p style={{ fontSize: "11px", color: "#888", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "1px" }}>Forme</p>
+                  <p style={{ fontSize: "52px", fontWeight: "bold", color: formeMoyenne !== null ? getCouleurForme(formeMoyenne) : "#555", margin: 0, lineHeight: 1 }}>
+                    {formeMoyenne ?? "—"}
+                  </p>
+                  <p style={{ fontSize: "10px", color: "#555", marginTop: "6px" }}>moy. 3 dernières séances</p>
+                </div>
+              </div>
 
-          {/* Tuile score */}
-          {resultat ? (
-            <div style={{ backgroundColor: "#1e1e1e", borderRadius: "16px", padding: "28px", textAlign: "center", border: `2px solid ${getCouleur(resultat.score)}` }}>
-              <p style={{ fontSize: "13px", color: "#888", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "1px" }}>
-                Score de forme — {sports.find(s => s.id === sportActif)?.label}
-              </p>
-              <p style={{ fontSize: "64px", fontWeight: "bold", color: getCouleur(resultat.score), margin: "0", lineHeight: "1" }}>
-                {resultat.score}
-              </p>
-              <div style={{ height: "6px", backgroundColor: getCouleur(resultat.score), borderRadius: "3px", margin: "16px 0", opacity: 0.6 }} />
-              <p style={{ fontSize: "13px", color: getCouleur(resultat.score), fontWeight: "bold" }}>{getMessage(resultat.score)}</p>
-              <p style={{ fontSize: "11px", color: "#555", marginTop: "8px" }}>Basé sur {resultat.nbSeances} séance(s)</p>
-            </div>
+              {/* Statut d'entraînement */}
+              {statut && (
+                <div style={{
+                  backgroundColor: "#1e1e1e", borderRadius: "12px", padding: "16px",
+                  border: `1px solid ${statut.couleur}`, marginBottom: "8px"
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
+                    <span style={{ fontSize: "18px" }}>{statut.emoji}</span>
+                    <p style={{ fontSize: "15px", fontWeight: "bold", color: statut.couleur, margin: 0 }}>{statut.label}</p>
+                  </div>
+                  <p style={{ fontSize: "13px", color: "#888", margin: 0, paddingLeft: "28px" }}>{statut.message}</p>
+                </div>
+              )}
+            </>
           ) : (
-            <div style={{ backgroundColor: "#1e1e1e", borderRadius: "16px", padding: "28px", textAlign: "center", border: "1px solid #2a2a2a" }}>
-              <p style={{ fontSize: "13px", color: "#555" }}>
-                {sportActif === "tous" ? "Ajoute 2 séances pour voir ton score global" : "Ajoute une séance pour voir ton score"}
-              </p>
+            <div style={{ backgroundColor: "#1e1e1e", borderRadius: "16px", padding: "32px", textAlign: "center", border: "1px solid #2a2a2a" }}>
+              <p style={{ fontSize: "32px", marginBottom: "12px" }}>🏃</p>
+              <p style={{ fontSize: "13px", color: "#555" }}>Ajoute tes premières séances pour voir ta charge et ta forme</p>
             </div>
           )}
+
         </div>
       )}
 
@@ -184,10 +207,7 @@ export default function App() {
         ))}
       </div>
 
-      {/* Formulaire nouvelle séance */}
-      {formulaireOuvert && <Formulaire onFermer={() => setFormulaireOuvert(false)} />}
-
-      {/* Paramètres */}
+      {formulaireOuvert && <Formulaire onFermer={() => { setFormulaireOuvert(false) }} />}
       {parametresOuverts && <Parametres onFermer={() => setParametresOuverts(false)} />}
 
     </div>

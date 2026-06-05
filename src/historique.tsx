@@ -1,18 +1,30 @@
 import { useState } from "react"
 
-// 🎨 Couleur selon le score
-const getCouleurScore = (score: number) => {
-  if (score >= 75) return "#4CAF50"
-  if (score >= 60) return "#FFC107"
-  if (score >= 40) return "#FF9800"
+const getCouleurForme = (v: number) => {
+  if (v >= 75) return "#4CAF50"
+  if (v >= 60) return "#FFC107"
+  if (v >= 40) return "#FF9800"
   return "#F44336"
+}
+
+const getCouleurCharge = (v: number) => {
+  if (v <= 30) return "#4A90E2"
+  if (v <= 60) return "#4CAF50"
+  if (v <= 90) return "#FF9800"
+  return "#F44336"
+}
+
+const getLabelCharge = (v: number) => {
+  if (v <= 30) return "Légère"
+  if (v <= 60) return "Modérée"
+  if (v <= 90) return "Élevée"
+  return "Très élevée"
 }
 
 // 🏅 Emoji par sport
 const getEmoji = (sport: string) => {
   const emojis: Record<string, string> = {
-    course: "🏃", trail: "🌄", vtt: "🚵",
-    velo: "🚴", natation: "🏊", muscu: "🏋️", crossfit: "💪"
+    trail: "🌄", course: "🏃", vtt: "🚵", velo: "🚴"
   }
   return emojis[sport] || "🏅"
 }
@@ -20,8 +32,7 @@ const getEmoji = (sport: string) => {
 // 🏅 Nom du sport
 const getNomSport = (sport: string) => {
   const noms: Record<string, string> = {
-    course: "Course à pied", trail: "Trail", vtt: "VTT",
-    velo: "Vélo route", natation: "Natation", muscu: "Musculation", crossfit: "CrossFit"
+    trail: "Trail", course: "Course à pied", vtt: "VTT", velo: "Vélo route"
   }
   return noms[sport] || sport
 }
@@ -56,11 +67,11 @@ export default function Historique() {
           <div key={seance.id} style={{
             backgroundColor: "#1e1e1e", borderRadius: "12px", padding: "16px",
             border: "1px solid #2a2a2a",
-            borderLeft: `4px solid ${getCouleurScore(seance.score)}`
+            borderLeft: `4px solid ${seance.forme !== undefined ? getCouleurForme(seance.forme) : "#2a2a2a"}`
           }}>
 
-            {/* Ligne 1 — sport + date + score */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+            {/* Ligne 1 — sport + date */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <span style={{ fontSize: "20px" }}>{getEmoji(seance.sport)}</span>
                 <div>
@@ -72,56 +83,73 @@ export default function Historique() {
                   </p>
                 </div>
               </div>
-              {/* Badge score */}
-              <div style={{
-                backgroundColor: getCouleurScore(seance.score), borderRadius: "20px",
-                padding: "4px 12px", fontSize: "14px", fontWeight: "bold", color: "white"
-              }}>
-                {seance.score}
-              </div>
             </div>
 
-            {/* Ligne 2 — stats */}
-            <div style={{ display: "flex", gap: "16px", marginTop: "8px" }}>
+            {/* Badges Charge + Forme */}
+            <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+              {seance.charge !== undefined && (
+                <div style={{ flex: 1, backgroundColor: "#2a2a2a", borderRadius: "8px", padding: "10px", textAlign: "center", borderTop: `3px solid ${getCouleurCharge(seance.charge)}` }}>
+                  <p style={{ fontSize: "18px", fontWeight: "bold", color: getCouleurCharge(seance.charge), margin: 0 }}>{seance.charge}</p>
+                  <p style={{ fontSize: "10px", color: "#555", margin: "2px 0 0" }}>Charge · {getLabelCharge(seance.charge)}</p>
+                </div>
+              )}
+              {seance.forme !== undefined && (
+                <div style={{ flex: 1, backgroundColor: "#2a2a2a", borderRadius: "8px", padding: "10px", textAlign: "center", borderTop: `3px solid ${getCouleurForme(seance.forme)}` }}>
+                  <p style={{ fontSize: "18px", fontWeight: "bold", color: getCouleurForme(seance.forme), margin: 0 }}>{seance.forme}</p>
+                  <p style={{ fontSize: "10px", color: "#555", margin: "2px 0 0" }}>Forme</p>
+                </div>
+              )}
+              {seance.charge === undefined && seance.score !== undefined && (
+                <div style={{ flex: 1, backgroundColor: "#2a2a2a", borderRadius: "8px", padding: "10px", textAlign: "center" }}>
+                  <p style={{ fontSize: "18px", fontWeight: "bold", color: getCouleurForme(seance.score), margin: 0 }}>{seance.score}</p>
+                  <p style={{ fontSize: "10px", color: "#555", margin: "2px 0 0" }}>Score</p>
+                </div>
+              )}
+            </div>
+
+            {/* Stats objectifs */}
+            <div style={{ display: "flex", gap: "12px" }}>
               {seance.duree && (
-                <div style={{ textAlign: "center" }}>
+                <div>
                   <p style={{ fontSize: "13px", fontWeight: "bold", color: "white", margin: 0 }}>{seance.duree}</p>
                   <p style={{ fontSize: "11px", color: "#555", margin: 0 }}>Durée</p>
                 </div>
               )}
               {seance.distance && (
-                <div style={{ textAlign: "center" }}>
+                <div>
                   <p style={{ fontSize: "13px", fontWeight: "bold", color: "white", margin: 0 }}>{seance.distance} km</p>
                   <p style={{ fontSize: "11px", color: "#555", margin: 0 }}>Distance</p>
                 </div>
               )}
               {seance.denivele && (
-                <div style={{ textAlign: "center" }}>
+                <div>
                   <p style={{ fontSize: "13px", fontWeight: "bold", color: "white", margin: 0 }}>{seance.denivele} m</p>
                   <p style={{ fontSize: "11px", color: "#555", margin: 0 }}>D+</p>
                 </div>
               )}
               {seance.parcours && (
-                <div style={{ textAlign: "center" }}>
+                <div>
                   <p style={{ fontSize: "13px", fontWeight: "bold", color: "white", margin: 0 }}>{seance.parcours}</p>
                   <p style={{ fontSize: "11px", color: "#555", margin: 0 }}>Parcours</p>
                 </div>
               )}
             </div>
 
-            {/* Ligne 3 — scores détaillés SNC/Muscu/Cardio */}
-            <div style={{ display: "flex", gap: "8px", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #2a2a2a" }}>
-              {[
-                { label: "SNC", valeur: seance.score_snc, couleur: "#FF6B35" },
-                { label: "Muscu", valeur: seance.score_musculaire, couleur: "#4A90E2" },
-                { label: "Cardio", valeur: seance.score_cardio, couleur: "#50C878" },
-              ].map(sys => (
-                <div key={sys.label} style={{ flex: 1, textAlign: "center", backgroundColor: "#2a2a2a", borderRadius: "6px", padding: "6px" }}>
-                  <p style={{ fontSize: "13px", fontWeight: "bold", color: sys.couleur, margin: 0 }}>{sys.valeur}</p>
-                  <p style={{ fontSize: "10px", color: "#555", margin: 0 }}>{sys.label}</p>
-                </div>
-              ))}
-            </div>
+            {/* Détail SNC/Muscu/Cardio */}
+            {(seance.score_snc !== undefined) && (
+              <div style={{ display: "flex", gap: "8px", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #2a2a2a" }}>
+                {[
+                  { label: "SNC", valeur: seance.score_snc, couleur: "#FF6B35" },
+                  { label: "Muscu", valeur: seance.score_musculaire, couleur: "#4A90E2" },
+                  { label: "Cardio", valeur: seance.score_cardio, couleur: "#50C878" },
+                ].map(sys => (
+                  <div key={sys.label} style={{ flex: 1, textAlign: "center", backgroundColor: "#2a2a2a", borderRadius: "6px", padding: "6px" }}>
+                    <p style={{ fontSize: "13px", fontWeight: "bold", color: sys.couleur, margin: 0 }}>{sys.valeur}</p>
+                    <p style={{ fontSize: "10px", color: "#555", margin: 0 }}>{sys.label}</p>
+                  </div>
+                ))}
+              </div>
+            )}
 
           </div>
         ))}

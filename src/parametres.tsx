@@ -7,13 +7,10 @@ const styleSectionTitre = { fontSize: "16px", fontWeight: "bold" as const, color
 
 // 🏅 Sports avec coefficients par défaut
 const SPORTS_DEFAUT = [
-  { id: "crossfit", label: "CrossFit", emoji: "💪", coef: 1.0 },
   { id: "trail", label: "Trail", emoji: "🌄", coef: 0.98 },
   { id: "course", label: "Course à pied", emoji: "🏃", coef: 0.78 },
   { id: "vtt", label: "VTT", emoji: "🚵", coef: 0.76 },
-  { id: "muscu", label: "Musculation", emoji: "🏋️", coef: 0.73 },
   { id: "velo", label: "Vélo route", emoji: "🚴", coef: 0.70 },
-  { id: "natation", label: "Natation", emoji: "🏊", coef: 0.70 },
 ]
 
 // 🎨 Couleur coefficient

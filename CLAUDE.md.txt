@@ -1,0 +1,167 @@
+# FeelTrack — Documentation projet pour Claude Code
+
+## Présentation
+FeelTrack est une application web mobile-first de suivi du ressenti sportif pour coureurs, cyclistes et vététistes. Contrairement à Strava qui mesure la performance objective, FeelTrack se concentre sur **comment le sportif se sent** — physiquement, mentalement et dans son environnement.
+
+**URL de production** : https://feeltrack-weld.vercel.app/
+**Repository GitHub** : https://github.com/jjuju15-cmyk/feeltrack
+**Stack** : React + TypeScript + Vite + Recharts
+**Déploiement** : Vercel (auto-deploy sur push GitHub)
+
+---
+
+## Architecture des fichiers
+
+```
+src/
+├── App.tsx          — Page principale + navigation + page accueil
+├── formulaire.tsx   — Formulaire nouvelle séance (8 sections)
+├── historique.tsx   — Liste des séances sauvegardées
+├── profil.tsx       — Stats, graphiques, objectifs, calendrier, aide
+├── parametres.tsx   — Paramètres profil, objectifs, coefficients, données
+├── App.css          — Styles globaux (minimal)
+└── index.css        — Reset CSS + fond noir
+```
+
+**Note importante** : les fichiers sont en **minuscules** (formulaire.tsx, historique.tsx, profil.tsx, parametres.tsx) mais importés avec majuscule dans App.tsx. Ne pas changer la casse.
+
+---
+
+## Stockage des données
+
+Tout est stocké en **localStorage** — pas de base de données externe.
+
+| Clé | Contenu |
+|-----|---------|
+| `pseudo` | Prénom de l'utilisateur |
+| `age` | Âge |
+| `poids` | Poids en kg |
+| `taille` | Taille en cm |
+| `sportPrincipal` | Sport principal (id) |
+| `seances` | Array JSON de toutes les séances |
+| `coefficients` | Object JSON des coefficients par sport |
+| `obj_distance` | Objectif distance mensuelle |
+| `obj_seances` | Objectif nb séances mensuel |
+| `obj_score` | Objectif score de forme |
+
+### Structure d'une séance sauvegardée
+```typescript
+{
+  id: string,              // Date.now().toString()
+  date: string,            // "YYYY-MM-DD"
+  sport: string,           // "course" | "trail" | "vtt" | "velo" | "natation" | "muscu" | "crossfit"
+  type: string,            // "Entraînement" | "Compétition"
+  parcours: string,
+  duree: string,
+  distance: string,
+  denivele: string,
+  meteo: string,
+  moment: string,
+  temperature: string,
+  note: string,
+  score: number,           // Score final 0-100
+  score_snc: number,       // Score SNC 0-100
+  score_musculaire: number,// Score musculaire 0-100
+  score_cardio: number,    // Score cardio 0-100
+}
+```
+
+---
+
+## Système de calcul des scores
+
+### Les 3 systèmes physiologiques
+- **SNC** (35%) — Système Nerveux Central : technicité, gestion effort, motivation
+- **Musculaire** (35%) — jambes, douleur, énergie
+- **Cardio** (30%) — effort cardio, respiration
+
+### Formule de calcul (dans formulaire.tsx)
+```
+scoreSNC = (technicite×0.5 + gestionEffort×0.3 + motivation×0.2) / 5 × 100
+scoreMusculaire = (jambes×0.4 + (6-douleur)×0.4 + energie×0.2) / 5 × 100
+scoreCardio = (cardio×0.5 + respiration×0.5) / 5 × 100
+scoreBrut = SNC×0.35 + Musculaire×0.35 + Cardio×0.30
+coefTotal = coefTemperature × coefMeteo × coefMoment × coefTerrain
+scoreEnv = min(100, scoreBrut × coefTotal)
+coefHygiene = (sommeil + hydratation + nutrition + (6-fatigue)) / 20
+scoreFinal = min(100, scoreEnv × (0.85 + coefHygiene × 0.15))
+```
+
+### Zones de forme
+| Score | Zone | Couleur hex | Message |
+|-------|------|-------------|---------|
+| 75-100 | Optimale | #4CAF50 | "Forme optimale — continue comme ça" |
+| 60-74 | Vigilance | #FFC107 | "Légère fatigue — surveille ta récupération" |
+| 40-59 | Fatigue | #FF9800 | "Charge élevée — pense à récupérer" |
+| 0-39 | Surcharge | #F44336 | "Surcharge détectée — repos recommandé 🛑" |
+
+### Coefficients multi-sport (modifiables dans paramètres)
+```
+crossfit: 1.0, trail: 0.98, course: 0.78, vtt: 0.76,
+muscu: 0.73, velo: 0.70, natation: 0.70
+```
+
+### Score "Tous les sports"
+Moyenne pondérée : `(somme(score × coef)) / (somme(coef))` sur les 10 dernières séances.
+Affiché uniquement dès 2 séances toutes disciplines confondues.
+
+---
+
+## Règles de développement
+
+### Responsive
+- Mobile-first, max-width 480px centré
+- Pas de slider horizontal pour naviguer entre éléments
+- Boutons min 44px de hauteur pour usage tactile
+
+### Styles
+- Fond global : #0f0f0f (index.css)
+- Composants : #1e1e1e
+- Inputs/secondaire : #2a2a2a
+- Bordures : #2a2a2a / #333
+- Pas de fichiers CSS séparés par composant — styles inline dans les composants
+
+### Conventions
+- Tous les sliders de 1 à 5 avec étiquettes min/max
+- Boutons actifs : #1a73e8 (bleu)
+- Bouton principal : #4CAF50 (vert)
+- Danger/suppression : #F44336 (rouge)
+- Les formulaires n'utilisent pas de balises `<form>` — uniquement des handlers onClick/onChange
+
+### Sports disponibles
+```
+course, trail, vtt, velo, natation, muscu, crossfit
+```
+
+---
+
+## Workflow de déploiement
+
+```bash
+# Modifier le code dans VS Code
+# Puis publier :
+git add .
+git commit -m "description du changement"
+git push
+# Vercel détecte le push et redéploie automatiquement en 1-2 minutes
+```
+
+---
+
+## Ce qui est prévu pour les prochaines versions
+
+- Intégration du poids/taille dans les calculs (rapport poids/puissance)
+- Mode hors ligne (PWA complète avec service worker)
+- Partage de séances entre utilisateurs
+- Analyse de tendances automatique (patterns météo, moment de la journée)
+- Export des données en CSV/PDF
+- Ajout de sports : sports de combat, gymnastique, yoga
+
+---
+
+## Points d'attention
+
+- **Ne pas modifier les coefficients par défaut** sans mettre à jour aussi l'onglet Aide dans profil.tsx qui les affiche
+- **Le localStorage est limité** à environ 5MB — pas de problème pour des centaines de séances texte
+- **Pas de synchronisation** entre appareils — chaque appareil a ses propres données
+- **La casse des imports** est sensible sur Linux/Vercel — toujours importer en minuscules

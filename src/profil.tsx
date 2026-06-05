@@ -4,7 +4,6 @@ import {
   ResponsiveContainer, ReferenceLine, ReferenceArea, Legend
 } from "recharts"
 
-// 🎨 Couleur selon le score
 const getCouleurScore = (score: number) => {
   if (score >= 75) return "#4CAF50"
   if (score >= 60) return "#FFC107"
@@ -15,8 +14,7 @@ const getCouleurScore = (score: number) => {
 // 🏅 Emoji par sport
 const getEmoji = (sport: string) => {
   const emojis: Record<string, string> = {
-    course: "🏃", trail: "🌄", vtt: "🚵",
-    velo: "🚴", natation: "🏊", muscu: "🏋️", crossfit: "💪"
+    trail: "🌄", course: "🏃", vtt: "🚵", velo: "🚴"
   }
   return emojis[sport] || "🏅"
 }
@@ -34,16 +32,28 @@ const TooltipGraphique1 = ({ active, payload, label }: any) => {
   )
 }
 
+const getCouleurForme = (v: number) => {
+  if (v >= 75) return "#4CAF50"
+  if (v >= 60) return "#FFC107"
+  if (v >= 40) return "#FF9800"
+  return "#F44336"
+}
+const getCouleurCharge = (v: number) => {
+  if (v <= 30) return "#4A90E2"
+  if (v <= 60) return "#4CAF50"
+  if (v <= 90) return "#FF9800"
+  return "#F44336"
+}
+
 const TooltipGraphique2 = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
-  const score = payload[0]?.value
+  const charge = payload.find((p: any) => p.dataKey === "Charge")?.value
+  const forme = payload.find((p: any) => p.dataKey === "Forme")?.value
   return (
     <div style={{ backgroundColor: "#1e1e1e", border: "1px solid #2a2a2a", borderRadius: "8px", padding: "12px", fontSize: "12px" }}>
       <p style={{ color: "#888", marginBottom: "8px" }}>{label}</p>
-      <p style={{ color: getCouleurScore(score), margin: 0 }}>Score : <strong>{score}/100</strong></p>
-      <p style={{ color: "#555", margin: "4px 0 0", fontSize: "11px" }}>
-        {score >= 75 ? "🟢 Optimale" : score >= 60 ? "🟡 Vigilance" : score >= 40 ? "🟠 Fatigue" : "🔴 Surcharge"}
-      </p>
+      {charge !== undefined && <p style={{ color: getCouleurCharge(charge), margin: "2px 0" }}>Charge : <strong>{charge}</strong></p>}
+      {forme !== undefined && <p style={{ color: getCouleurForme(forme), margin: "2px 0" }}>Forme : <strong>{forme}/100</strong></p>}
     </div>
   )
 }
@@ -93,8 +103,7 @@ export default function Profil() {
 
   // 🧮 Coefficients — identiques à la page d'accueil
   const COEFFICIENTS: Record<string, number> = {
-    course: 0.78, trail: 0.98, vtt: 0.76, velo: 0.70,
-    natation: 0.70, muscu: 0.73, crossfit: 1.0
+    trail: 0.98, course: 0.78, vtt: 0.76, velo: 0.70
   }
 
   // 📊 Stats globales
@@ -111,11 +120,12 @@ export default function Profil() {
   })() : 0
 
   // 📈 Données graphiques
+  const avecNouveauxChamps = seances.filter((s: any) => s.charge !== undefined && s.forme !== undefined)
   const donneesGraphique1 = seances.slice(0, 10).reverse().map((s: any, i: number) => ({
     name: `S${i + 1}`, SNC: s.score_snc || 0, Musculaire: s.score_musculaire || 0, Cardio: s.score_cardio || 0,
   }))
-  const donneesGraphique2 = seances.slice(0, 10).reverse().map((s: any, i: number) => ({
-    name: `S${i + 1}`, Score: s.score, sport: s.sport,
+  const donneesGraphique2 = avecNouveauxChamps.slice(0, 10).reverse().map((s: any, i: number) => ({
+    name: `S${i + 1}`, Charge: s.charge, Forme: s.forme,
   }))
 
   // 📅 Calendrier
@@ -203,7 +213,7 @@ export default function Profil() {
           ) : (
             <>
               <p style={{ fontSize: "14px", color: "#888", marginBottom: "12px" }}>Par sport</p>
-              {["course","trail","vtt","velo","natation","muscu","crossfit"].map(sport => {
+              {["trail","course","vtt","velo"].map(sport => {
                 const seancesSport = seances.filter((s: any) => s.sport === sport)
                 if (seancesSport.length === 0) return null
                 const scoreMoyenSport = Math.round(seancesSport.reduce((acc: number, s: any) => acc + s.score, 0) / seancesSport.length)
@@ -238,8 +248,37 @@ export default function Profil() {
             </div>
           ) : (
             <>
-              <div style={{ backgroundColor: "#1e1e1e", borderRadius: "16px", padding: "16px", marginBottom: "24px", border: "1px solid #2a2a2a" }}>
-                <p style={{ fontSize: "14px", color: "white", fontWeight: "bold", marginBottom: "4px" }}>📈 Les 3 systèmes</p>
+              {/* Graphique 1 — Charge vs Forme */}
+              {donneesGraphique2.length >= 2 && (
+                <div style={{ backgroundColor: "#1e1e1e", borderRadius: "16px", padding: "16px", marginBottom: "24px", border: "1px solid #2a2a2a" }}>
+                  <p style={{ fontSize: "14px", color: "white", fontWeight: "bold", marginBottom: "4px" }}>📊 Charge vs Forme</p>
+                  <p style={{ fontSize: "11px", color: "#555", marginBottom: "16px" }}>Charge 🟠 — Forme 🟢 (10 dernières séances)</p>
+                  <ResponsiveContainer width="100%" height={240}>
+                    <LineChart data={donneesGraphique2} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                      <ReferenceArea y1={75} y2={100} fill="#4CAF50" fillOpacity={0.08} />
+                      <ReferenceArea y1={60} y2={75} fill="#FFC107" fillOpacity={0.08} />
+                      <ReferenceArea y1={40} y2={60} fill="#FF9800" fillOpacity={0.08} />
+                      <ReferenceArea y1={0} y2={40} fill="#F44336" fillOpacity={0.08} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
+                      <XAxis dataKey="name" tick={{ fill: "#555", fontSize: 11 }} />
+                      <YAxis domain={[0, 120]} tick={{ fill: "#555", fontSize: 11 }} />
+                      <Tooltip content={<TooltipGraphique2 />} />
+                      <Legend wrapperStyle={{ fontSize: "12px", color: "#888" }} />
+                      <Line type="monotone" dataKey="Charge" stroke="#FF9800" strokeWidth={2} dot={{ fill: "#FF9800", r: 4 }} />
+                      <Line type="monotone" dataKey="Forme" stroke="#4CAF50" strokeWidth={2} dot={{ fill: "#4CAF50", r: 4 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                  <div style={{ backgroundColor: "#2a2a2a", borderRadius: "8px", padding: "10px", marginTop: "12px" }}>
+                    <p style={{ fontSize: "11px", color: "#FFC107", margin: 0 }}>
+                      💡 Quand la <strong style={{ color: "#FF9800" }}>charge monte</strong> et la <strong style={{ color: "#4CAF50" }}>forme descend</strong> — c'est le signal de surmenage.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Graphique 2 — Les 3 systèmes */}
+              <div style={{ backgroundColor: "#1e1e1e", borderRadius: "16px", padding: "16px", border: "1px solid #2a2a2a" }}>
+                <p style={{ fontSize: "14px", color: "white", fontWeight: "bold", marginBottom: "4px" }}>⚙️ Les 3 systèmes</p>
                 <p style={{ fontSize: "11px", color: "#555", marginBottom: "16px" }}>SNC 🟠 / Musculaire 🔵 / Cardio 🟢</p>
                 <ResponsiveContainer width="100%" height={220}>
                   <LineChart data={donneesGraphique1} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
@@ -253,60 +292,6 @@ export default function Profil() {
                     <Line type="monotone" dataKey="Cardio" stroke="#50C878" strokeWidth={2} dot={{ fill: "#50C878", r: 4 }} />
                   </LineChart>
                 </ResponsiveContainer>
-              </div>
-
-              <div style={{ backgroundColor: "#1e1e1e", borderRadius: "16px", padding: "16px", border: "1px solid #2a2a2a" }}>
-                <p style={{ fontSize: "14px", color: "white", fontWeight: "bold", marginBottom: "4px" }}>📊 Score global</p>
-                <p style={{ fontSize: "11px", color: "#555", marginBottom: "16px" }}>Évolution avec zones de forme</p>
-                <ResponsiveContainer width="100%" height={260}>
-                  <LineChart data={donneesGraphique2} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-                    <ReferenceArea y1={75} y2={100} fill="#4CAF50" fillOpacity={0.1} />
-                    <ReferenceArea y1={60} y2={75} fill="#FFC107" fillOpacity={0.1} />
-                    <ReferenceArea y1={40} y2={60} fill="#FF9800" fillOpacity={0.1} />
-                    <ReferenceArea y1={0} y2={40} fill="#F44336" fillOpacity={0.1} />
-                    <ReferenceLine y={75} stroke="#4CAF50" strokeDasharray="4 4" strokeWidth={1} />
-                    <ReferenceLine y={60} stroke="#FFC107" strokeDasharray="4 4" strokeWidth={1} />
-                    <ReferenceLine y={40} stroke="#FF9800" strokeDasharray="4 4" strokeWidth={1} />
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-                    <XAxis dataKey="name" tick={{ fill: "#555", fontSize: 11 }} />
-                    <YAxis domain={[0, 100]} tick={{ fill: "#555", fontSize: 11 }} />
-                    <Tooltip content={<TooltipGraphique2 />} />
-                    <Line type="monotone" dataKey="Score" stroke="#2196F3" strokeWidth={3}
-                      dot={(props: any) => {
-                        const { cx, cy, payload } = props
-                        return <circle key={`dot-${payload.name}`} cx={cx} cy={cy} r={5} fill={getCouleurScore(payload.Score)} stroke="none" />
-                      }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-                <div style={{ display: "flex", gap: "8px", marginTop: "12px", justifyContent: "center", flexWrap: "wrap" }}>
-                  {[{couleur:"#4CAF50",label:"Optimal"},{couleur:"#FFC107",label:"Vigilance"},{couleur:"#FF9800",label:"Fatigue"},{couleur:"#F44336",label:"Surcharge"}].map(z => (
-                    <div key={z.label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      <div style={{ width: "10px", height: "10px", borderRadius: "2px", backgroundColor: z.couleur }} />
-                      <span style={{ fontSize: "11px", color: "#555" }}>{z.label}</span>
-                    </div>
-                  ))}
-                </div>
-                {donneesGraphique2.length > 0 && (() => {
-                  const scores = donneesGraphique2.map((d: any) => d.Score)
-                  const moy = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length)
-                  const max = Math.max(...scores)
-                  const pctOptimal = Math.round(scores.filter((s: number) => s >= 75).length / scores.length * 100)
-                  return (
-                    <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
-                      {[
-                        { label: "Moyenne", valeur: `${moy}/100`, couleur: getCouleurScore(moy) },
-                        { label: "Meilleur", valeur: `${max}/100`, couleur: "#4CAF50" },
-                        { label: "Zone optimale", valeur: `${pctOptimal}%`, couleur: "#4CAF50" },
-                      ].map(ins => (
-                        <div key={ins.label} style={{ flex: 1, backgroundColor: "#2a2a2a", borderRadius: "8px", padding: "8px", textAlign: "center" }}>
-                          <p style={{ fontSize: "14px", fontWeight: "bold", color: ins.couleur, margin: 0 }}>{ins.valeur}</p>
-                          <p style={{ fontSize: "10px", color: "#555", margin: 0 }}>{ins.label}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )
-                })()}
               </div>
             </>
           )}
@@ -510,13 +495,10 @@ export default function Profil() {
               />
               <p style={{ fontSize: "13px", color: "#888", marginBottom: "12px" }}>Tableau des coefficients :</p>
               {[
-                { sport: "CrossFit", emoji: "💪", coef: 1.0, raison: "Référence — effort total maximal" },
-                { sport: "Trail", emoji: "🌄", coef: 0.98, raison: "Très proche du CrossFit en exigence" },
-                { sport: "Course à pied", emoji: "🏃", coef: 0.78, raison: "Cardio élevé, moins technique" },
-                { sport: "VTT", emoji: "🚵", coef: 0.76, raison: "Technique élevée, moins intense" },
-                { sport: "Musculation", emoji: "🏋️", coef: 0.73, raison: "SNC élevé, effort ciblé" },
-                { sport: "Vélo route", emoji: "🚴", coef: 0.70, raison: "Endurance, peu de SNC" },
-                { sport: "Natation", emoji: "🏊", coef: 0.70, raison: "Bon cardio, peu d'impact" },
+                { sport: "Trail", emoji: "🌄", coef: 0.98, raison: "Effort global maximal — SNC, musculaire et cardio sollicités" },
+                { sport: "Course à pied", emoji: "🏃", coef: 0.78, raison: "Cardio élevé, moins de SNC et impact terrain" },
+                { sport: "VTT", emoji: "🚵", coef: 0.76, raison: "Technique élevée, effort variable selon terrain" },
+                { sport: "Vélo route", emoji: "🚴", coef: 0.70, raison: "Endurance, peu de SNC, impact musculaire modéré" },
               ].map(s => (
                 <div key={s.sport} style={{ backgroundColor: "#1e1e1e", borderRadius: "10px", padding: "12px 16px", marginBottom: "8px", border: "1px solid #2a2a2a", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
