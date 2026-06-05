@@ -1,7 +1,7 @@
 import { useState } from "react"
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceLine, ReferenceArea, Legend
+  ResponsiveContainer, ReferenceArea, Legend
 } from "recharts"
 
 const getCouleurScore = (score: number) => {
