@@ -4,33 +4,50 @@ interface Seance {
   sport: string; type: string; parcours: string; date: string
   duree: string; distance: string; denivele: string
   temperature: string; meteo: string; moment: string
-  // terrain trail/vtt
   etatSol: string; technicite: string
-  // surface course à pied
   surface: string
-  // profil vélo
   profilVelo: string
-  // physique
   energie: string; jambes: string; cardio: string
   respiration: string; douleur: string
-  // récupération
   sommeil: string; hydratation: string; nutrition: string; fatigue: string
-  // mental
   motivation: string; ressenti: string[]; gestionEffort: string
-  // nutrition compétition
   quantiteGlucides: string; toleranceDigestive: string; hydratationCourse: string
   note: string
 }
 
-const styleLabel = { fontSize: "13px", color: "#888", marginBottom: "6px", display: "block" as const }
-const styleInput = { width: "100%", padding: "12px", backgroundColor: "#2a2a2a", border: "1px solid #333", borderRadius: "8px", color: "white", fontSize: "15px", outline: "none", marginBottom: "16px" }
-const styleSectionTitre = { fontSize: "16px", fontWeight: "bold" as const, color: "#ffffff", marginBottom: "16px", paddingBottom: "8px", borderBottom: "1px solid #2a2a2a" }
-const styleBouton = (actif: boolean, couleur = "#1a73e8") => ({
-  padding: "10px 16px", backgroundColor: actif ? couleur : "#2a2a2a",
-  color: actif ? "white" : "#888",
-  border: actif ? `1px solid ${couleur}` : "1px solid #333",
-  borderRadius: "8px", fontSize: "14px", cursor: "pointer", marginRight: "8px", marginBottom: "8px"
+// ─── Styles de base ──────────────────────────────────────────────────────────
+
+const sLabel = {
+  fontSize: 12, color: "var(--ft-muted)", marginBottom: 8,
+  display: "block" as const, letterSpacing: "0.02em"
+}
+
+const sInput = {
+  width: "100%", padding: "12px 14px",
+  background: "var(--ft-surface)", border: "none",
+  borderRadius: "var(--ft-r-input)", color: "var(--ft-ink)",
+  fontSize: 15, outline: "none", marginBottom: 16,
+  fontFamily: "var(--ft-font-body)"
+} as const
+
+const sTitre = {
+  fontFamily: "var(--ft-font-display)", fontSize: 17, fontWeight: 700,
+  color: "var(--ft-ink)", marginBottom: 20, paddingBottom: 10,
+  borderBottom: "1px solid var(--ft-line)"
+} as const
+
+// Chip bouton — actif = pastel coloré, inactif = gris doux
+const sChip = (actif: boolean) => ({
+  padding: "9px 16px",
+  background: actif ? "rgba(124,111,240,0.12)" : "var(--ft-surface)",
+  color: actif ? "var(--ft-snc)" : "var(--ft-muted)",
+  border: actif ? "1.5px solid rgba(124,111,240,0.35)" : "1.5px solid transparent",
+  borderRadius: "var(--ft-r-chip)", fontSize: 13, fontWeight: actif ? 600 : 400,
+  cursor: "pointer", marginRight: 8, marginBottom: 8,
+  fontFamily: "var(--ft-font-body)", transition: "all 0.15s ease"
 })
+
+// ─── Données statiques ───────────────────────────────────────────────────────
 
 const sports = [
   { id: "trail", label: "Trail", emoji: "🌄" },
@@ -50,23 +67,44 @@ const getSections = (sport: string, type: string): string[] => {
   return s
 }
 
-const Slider = ({ label, valeur, onChange, min = "1", max = "5", labelMin, labelMax }: {
+const titreSection: Record<string, string> = {
+  general: "Informations générales",
+  objectif: "Données objectives",
+  conditions: "Conditions",
+  terrain: "Terrain",
+  surface: "Surface",
+  profil: "Profil du parcours",
+  physique: "État physique",
+  recuperation: "Récupération",
+  mental: "État mental",
+  nutrition: "Nutrition — Compétition",
+  note: "Note libre",
+}
+
+// ─── Composant Slider ─────────────────────────────────────────────────────────
+
+const Slider = ({ label, valeur, onChange, min = "1", max = "5", labelMin, labelMax, accent = "var(--ft-muscle)" }: {
   label: string; valeur: string; onChange: (v: string) => void
-  min?: string; max?: string; labelMin: string; labelMax: string
+  min?: string; max?: string; labelMin: string; labelMax: string; accent?: string
 }) => (
-  <div style={{ marginBottom: "24px" }}>
-    <label style={{ ...styleLabel, marginBottom: "10px" }}>
-      {label} — <span style={{ color: "#ffffff", fontWeight: "bold" }}>{valeur}/{max}</span>
-    </label>
-    <input type="range" min={min} max={max} value={valeur} onChange={e => onChange(e.target.value)}
-      style={{ width: "100%", accentColor: "#1a73e8", marginBottom: "4px" }} />
-    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#555" }}>
+  <div style={{ marginBottom: 24 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+      <label style={sLabel}>{label}</label>
+      <span style={{ fontFamily: "var(--ft-font-data)", fontSize: 15, fontWeight: 500, color: "var(--ft-ink)" }}>
+        {valeur}<span style={{ fontSize: 11, color: "var(--ft-muted)" }}>/{max}</span>
+      </span>
+    </div>
+    <input type="range" min={min} max={max} value={valeur}
+      onChange={e => onChange(e.target.value)}
+      style={{ width: "100%", accentColor: accent, marginBottom: 4 }} />
+    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--ft-muted)" }}>
       <span>{labelMin}</span><span>{labelMax}</span>
     </div>
   </div>
 )
 
-// ⏱️ Parse durée "1h30" → 90 minutes
+// ─── Calculs ─────────────────────────────────────────────────────────────────
+
 const parseDuree = (duree: string): number => {
   if (!duree) return 60
   const c = duree.toLowerCase().replace(/\s/g, "")
@@ -76,7 +114,6 @@ const parseDuree = (duree: string): number => {
   return m ? parseInt(m[1]) : 60
 }
 
-// 🧮 CALCUL DES SCORES
 const getCoefTemperature = (temp: number) => {
   if (temp <= 0) return 1.20; if (temp <= 5) return 1.10; if (temp <= 10) return 1.05
   if (temp <= 25) return 1.00; if (temp <= 30) return 1.05; if (temp <= 35) return 1.15
@@ -92,29 +129,23 @@ const getCoefTerrain = (technicite: string, etatSol: string) => {
   return coef
 }
 
-// 💥 CHARGE DE SÉANCE — effort réel fourni (0-200)
 const calculerCharge = (s: Seance): number => {
   const v = (c: string) => parseInt(c) || 3
-  const intensite = (v(s.cardio) + v(s.respiration)) / 10  // 0.2–1.0
+  const intensite = (v(s.cardio) + v(s.respiration)) / 10
   const dureeMin = parseDuree(s.duree)
   const coefSport: Record<string, number> = { trail: 1.0, vtt: 0.85, course: 0.75, velo: 0.65 }
   const cs = coefSport[s.sport] || 0.80
   const technicite = (s.sport === "trail" || s.sport === "vtt") ? s.technicite : "3"
   const coefEnv = getCoefTemperature(parseInt(s.temperature))
-    * getCoefMeteo(s.meteo)
-    * getCoefMoment(s.moment)
+    * getCoefMeteo(s.meteo) * getCoefMoment(s.moment)
     * getCoefTerrain(technicite, (s.sport === "trail" || s.sport === "vtt") ? s.etatSol : "")
   return Math.round(Math.min(200, Math.max(0, intensite * (dureeMin / 90) * cs * coefEnv * 70)))
 }
 
-// 💚 FORME — état subjectif de récupération (0-100)
 const calculerForme = (s: Seance): number => {
   const v = (c: string) => parseInt(c) || 3
-  const raw = v(s.energie) * 0.25
-    + (6 - v(s.fatigue)) * 0.25
-    + v(s.sommeil) * 0.20
-    + (6 - v(s.douleur)) * 0.15
-    + v(s.motivation) * 0.15
+  const raw = v(s.energie) * 0.25 + (6 - v(s.fatigue)) * 0.25
+    + v(s.sommeil) * 0.20 + (6 - v(s.douleur)) * 0.15 + v(s.motivation) * 0.15
   return Math.round(((raw - 1) / 4) * 100)
 }
 
@@ -126,7 +157,9 @@ const calculerScore = (s: Seance) => {
   const scoreCardio = (v(s.cardio) * 0.5 + v(s.respiration) * 0.5) / 5 * 100
   const scoreBrut = scoreSNC * 0.35 + scoreMusculaire * 0.35 + scoreCardio * 0.30
   const etatSolPourCoef = (s.sport === "trail" || s.sport === "vtt") ? s.etatSol : ""
-  const coefTotal = getCoefTemperature(parseInt(s.temperature)) * getCoefMeteo(s.meteo) * getCoefMoment(s.moment) * getCoefTerrain(technicite, etatSolPourCoef)
+  const coefTotal = getCoefTemperature(parseInt(s.temperature))
+    * getCoefMeteo(s.meteo) * getCoefMoment(s.moment)
+    * getCoefTerrain(technicite, etatSolPourCoef)
   const scoreEnv = Math.min(100, scoreBrut * coefTotal)
   const coefHygiene = (v(s.sommeil) + v(s.hydratation) + v(s.nutrition) + (6 - v(s.fatigue))) / 20
   const scoreFinal = Math.round(scoreEnv * (0.85 + coefHygiene * 0.15))
@@ -157,6 +190,8 @@ const sauvegarderSeance = (seance: Seance) => {
   return seanceSauvegardee
 }
 
+// ─── Composant principal ──────────────────────────────────────────────────────
+
 export default function Formulaire({ onFermer }: { onFermer: () => void }) {
   const [sectionIdx, setSectionIdx] = useState(0)
   const [seance, setSeance] = useState<Seance>({
@@ -185,8 +220,8 @@ export default function Formulaire({ onFermer }: { onFermer: () => void }) {
   const numero = sectionIdx + 1
 
   const validerSeance = () => {
-    const seanceSauvee = sauvegarderSeance(seance)
-    alert(`Séance enregistrée ! 🎉\nScore de forme : ${seanceSauvee.score}/100`)
+    const s = sauvegarderSeance(seance)
+    alert(`Séance enregistrée !\nCharge : ${s.charge}  ·  Forme : ${s.forme}/100`)
     onFermer()
   }
 
@@ -196,247 +231,287 @@ export default function Formulaire({ onFermer }: { onFermer: () => void }) {
   }
   const precedent = () => setSectionIdx(i => Math.max(0, i - 1))
 
-  const titreSection: Record<string, string> = {
-    general: "Informations générales",
-    objectif: "Données objectives",
-    conditions: "Conditions",
-    terrain: "Terrain",
-    surface: "Surface",
-    profil: "Profil du parcours",
-    physique: "État physique",
-    recuperation: "Récupération",
-    mental: "État mental",
-    nutrition: "Nutrition — Compétition",
-    note: "Note libre",
-  }
-
   return (
-    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.9)", zIndex: 100, overflowY: "auto", padding: "20px" }}>
-      <div style={{ maxWidth: "480px", margin: "0 auto", backgroundColor: "#121212", borderRadius: "16px", padding: "24px" }}>
+    <div style={{
+      position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+      background: "rgba(33,27,46,0.65)", backdropFilter: "blur(8px)",
+      zIndex: 100, overflowY: "auto", padding: "20px"
+    }}>
+      <div style={{
+        maxWidth: 480, margin: "0 auto",
+        background: "var(--ft-card)", borderRadius: "var(--ft-r-card)",
+        padding: 24, boxShadow: "var(--ft-shadow-lift)"
+      }}>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-          <h2 style={{ fontSize: "20px", color: "white" }}>Nouvelle séance</h2>
-          <button onClick={onFermer} style={{ backgroundColor: "transparent", border: "none", color: "#888", fontSize: "24px", cursor: "pointer" }}>✕</button>
+        {/* En-tête */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <h2 style={{
+            fontFamily: "var(--ft-font-display)", fontSize: 20, fontWeight: 700,
+            color: "var(--ft-ink)", margin: 0
+          }}>Nouvelle séance</h2>
+          <button onClick={onFermer} style={{
+            background: "var(--ft-surface)", border: "none", color: "var(--ft-muted)",
+            fontSize: 18, cursor: "pointer", width: 34, height: 34,
+            borderRadius: "var(--ft-r-orb)", display: "flex",
+            alignItems: "center", justifyContent: "center"
+          }}>✕</button>
         </div>
 
         {/* Barre de progression */}
-        <div style={{ display: "flex", gap: "4px", marginBottom: "8px" }}>
+        <div style={{ display: "flex", gap: 4, marginBottom: 6 }}>
           {sections.map((_, i) => (
             <div key={i} onClick={() => setSectionIdx(i)} style={{
-              flex: 1, height: "4px",
-              backgroundColor: i <= sectionIdx ? "#4CAF50" : "#2a2a2a",
-              borderRadius: "2px", cursor: "pointer"
+              flex: 1, height: 4,
+              background: i <= sectionIdx ? "var(--ft-snc)" : "var(--ft-line)",
+              borderRadius: 999, cursor: "pointer",
+              transition: "background 0.2s ease"
             }} />
           ))}
         </div>
-        <p style={{ fontSize: "11px", color: "#555", marginBottom: "24px", textAlign: "right" }}>{numero}/{total}</p>
+        <p style={{
+          fontFamily: "var(--ft-font-data)", fontSize: 11,
+          color: "var(--ft-muted)", marginBottom: 24, textAlign: "right"
+        }}>{numero}/{total}</p>
 
-        {/* SECTION GÉNÉRALE */}
+        {/* ── GÉNÉRAL ── */}
         {sectionActuelle === "general" && (
           <div>
-            <p style={styleSectionTitre}>{numero} — {titreSection.general}</p>
-            <label style={styleLabel}>Sport</label>
-            <div style={{ display: "flex", flexWrap: "wrap", marginBottom: "16px" }}>
+            <p style={sTitre}>{numero} — {titreSection.general}</p>
+            <span style={sLabel}>Sport</span>
+            <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 16 }}>
               {sports.map(s => (
-                <button key={s.id} onClick={() => { maj("sport", s.id); setSectionIdx(0) }} style={styleBouton(seance.sport === s.id)}>
+                <button key={s.id} onClick={() => { maj("sport", s.id); setSectionIdx(0) }}
+                  style={sChip(seance.sport === s.id)}>
                   {s.emoji} {s.label}
                 </button>
               ))}
             </div>
-            <label style={styleLabel}>Type</label>
-            <div style={{ display: "flex", flexWrap: "wrap", marginBottom: "16px" }}>
+            <span style={sLabel}>Type</span>
+            <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 16 }}>
               {["Entraînement", "Compétition"].map(t => (
-                <button key={t} onClick={() => maj("type", t)} style={styleBouton(seance.type === t)}>{t}</button>
+                <button key={t} onClick={() => maj("type", t)} style={sChip(seance.type === t)}>{t}</button>
               ))}
             </div>
-            <label style={styleLabel}>Parcours (optionnel)</label>
-            <input type="text" placeholder="Ex: Col du Galibier..." value={seance.parcours}
-              onChange={e => maj("parcours", e.target.value)} style={styleInput} />
-            <label style={styleLabel}>Date</label>
+            <span style={sLabel}>Parcours (optionnel)</span>
+            <input type="text" placeholder="Ex: Col du Galibier…" value={seance.parcours}
+              onChange={e => maj("parcours", e.target.value)} style={sInput} />
+            <span style={sLabel}>Date</span>
             <input type="date" value={seance.date} onChange={e => maj("date", e.target.value)}
-              style={{ ...styleInput, colorScheme: "dark" }} />
+              style={{ ...sInput, colorScheme: "light" }} />
           </div>
         )}
 
-        {/* SECTION DONNÉES OBJECTIVES */}
+        {/* ── DONNÉES OBJECTIVES ── */}
         {sectionActuelle === "objectif" && (
           <div>
-            <p style={styleSectionTitre}>{numero} — {titreSection.objectif}</p>
-            <label style={styleLabel}>Durée (obligatoire)</label>
+            <p style={sTitre}>{numero} — {titreSection.objectif}</p>
+            <span style={sLabel}>Durée (obligatoire)</span>
             <input type="text" placeholder="Ex: 1h30" value={seance.duree}
-              onChange={e => maj("duree", e.target.value)} style={styleInput} />
-            <label style={styleLabel}>Distance en km (optionnel)</label>
+              onChange={e => maj("duree", e.target.value)} style={sInput} />
+            <span style={sLabel}>Distance en km (optionnel)</span>
             <input type="number" placeholder="Ex: 12.5" value={seance.distance}
-              onChange={e => maj("distance", e.target.value)} style={styleInput} />
+              onChange={e => maj("distance", e.target.value)} style={sInput} />
             {(seance.sport === "trail" || seance.sport === "vtt" || seance.sport === "velo") && (
-              <div>
-                <label style={styleLabel}>Dénivelé positif D+ en mètres</label>
+              <>
+                <span style={sLabel}>Dénivelé positif D+ en mètres</span>
                 <input type="number" placeholder="Ex: 800" value={seance.denivele}
-                  onChange={e => maj("denivele", e.target.value)} style={styleInput} />
-              </div>
+                  onChange={e => maj("denivele", e.target.value)} style={sInput} />
+              </>
             )}
           </div>
         )}
 
-        {/* SECTION CONDITIONS */}
+        {/* ── CONDITIONS ── */}
         {sectionActuelle === "conditions" && (
           <div>
-            <p style={styleSectionTitre}>{numero} — {titreSection.conditions}</p>
-            <label style={styleLabel}>Température ressentie : {seance.temperature}°C</label>
+            <p style={sTitre}>{numero} — {titreSection.conditions}</p>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+              <span style={sLabel}>Température ressentie</span>
+              <span style={{ fontFamily: "var(--ft-font-data)", fontSize: 15, fontWeight: 500, color: "var(--ft-ink)" }}>
+                {seance.temperature}°C
+              </span>
+            </div>
             <input type="range" min="-10" max="45" value={seance.temperature}
               onChange={e => maj("temperature", e.target.value)}
-              style={{ width: "100%", marginBottom: "4px", accentColor: "#1a73e8" }} />
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#555", marginBottom: "20px" }}>
+              style={{ width: "100%", marginBottom: 4, accentColor: "var(--ft-cardio)" }} />
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--ft-muted)", marginBottom: 20 }}>
               <span>-10°C</span><span>45°C</span>
             </div>
-            <label style={styleLabel}>Météo</label>
-            <div style={{ display: "flex", flexWrap: "wrap", marginBottom: "16px" }}>
+            <span style={sLabel}>Météo</span>
+            <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 16 }}>
               {[
                 { id: "soleil", label: "☀️ Soleil" }, { id: "nuageux", label: "🌥️ Nuageux" },
                 { id: "pluie", label: "🌧️ Pluie" }, { id: "vent", label: "💨 Vent" },
                 { id: "neige", label: "❄️ Neige" }
               ].map(m => (
-                <button key={m.id} onClick={() => maj("meteo", m.id)} style={styleBouton(seance.meteo === m.id)}>{m.label}</button>
+                <button key={m.id} onClick={() => maj("meteo", m.id)} style={sChip(seance.meteo === m.id)}>{m.label}</button>
               ))}
             </div>
-            <label style={styleLabel}>Moment de la journée</label>
-            <div style={{ display: "flex", flexWrap: "wrap", marginBottom: "16px" }}>
+            <span style={sLabel}>Moment de la journée</span>
+            <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 16 }}>
               {[
                 { id: "matin", label: "🌅 Matin" }, { id: "aprem", label: "🌞 Après-midi" },
                 { id: "soir", label: "🌆 Soir" }, { id: "nuit", label: "🌙 Nuit" }
               ].map(m => (
-                <button key={m.id} onClick={() => maj("moment", m.id)} style={styleBouton(seance.moment === m.id)}>{m.label}</button>
+                <button key={m.id} onClick={() => maj("moment", m.id)} style={sChip(seance.moment === m.id)}>{m.label}</button>
               ))}
             </div>
           </div>
         )}
 
-        {/* SECTION TERRAIN (trail / vtt) */}
+        {/* ── TERRAIN (trail / vtt) ── */}
         {sectionActuelle === "terrain" && (
           <div>
-            <p style={styleSectionTitre}>{numero} — {titreSection.terrain}</p>
-            <label style={styleLabel}>État du sol</label>
-            <div style={{ display: "flex", flexWrap: "wrap", marginBottom: "16px" }}>
+            <p style={sTitre}>{numero} — {titreSection.terrain}</p>
+            <span style={sLabel}>État du sol</span>
+            <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 16 }}>
               {["Sec", "Boueux", "Enneigé", "Rocheux"].map(e => (
-                <button key={e} onClick={() => maj("etatSol", e)} style={styleBouton(seance.etatSol === e)}>{e}</button>
+                <button key={e} onClick={() => maj("etatSol", e)} style={sChip(seance.etatSol === e)}>{e}</button>
               ))}
             </div>
-            <Slider label="Technicité du terrain" valeur={seance.technicite} onChange={v => maj("technicite", v)}
-              labelMin="Très roulant" labelMax="Très technique" />
+            <Slider label="Technicité du terrain" valeur={seance.technicite}
+              onChange={v => maj("technicite", v)} labelMin="Très roulant" labelMax="Très technique"
+              accent="var(--ft-snc)" />
           </div>
         )}
 
-        {/* SECTION SURFACE (course à pied) */}
+        {/* ── SURFACE (course à pied) ── */}
         {sectionActuelle === "surface" && (
           <div>
-            <p style={styleSectionTitre}>{numero} — {titreSection.surface}</p>
-            <label style={styleLabel}>Type de surface</label>
-            <div style={{ display: "flex", flexWrap: "wrap", marginBottom: "16px" }}>
+            <p style={sTitre}>{numero} — {titreSection.surface}</p>
+            <span style={sLabel}>Type de surface</span>
+            <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 16 }}>
               {["Route", "Piste d'athlétisme", "Chemin / Trail", "Tapis roulant"].map(s => (
-                <button key={s} onClick={() => maj("surface", s)} style={styleBouton(seance.surface === s)}>{s}</button>
+                <button key={s} onClick={() => maj("surface", s)} style={sChip(seance.surface === s)}>{s}</button>
               ))}
             </div>
           </div>
         )}
 
-        {/* SECTION PROFIL (vélo route) */}
+        {/* ── PROFIL (vélo route) ── */}
         {sectionActuelle === "profil" && (
           <div>
-            <p style={styleSectionTitre}>{numero} — {titreSection.profil}</p>
-            <label style={styleLabel}>Profil du parcours</label>
-            <div style={{ display: "flex", flexWrap: "wrap", marginBottom: "16px" }}>
+            <p style={sTitre}>{numero} — {titreSection.profil}</p>
+            <span style={sLabel}>Profil du parcours</span>
+            <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 16 }}>
               {["Plat", "Vallonné", "Montagneux"].map(p => (
-                <button key={p} onClick={() => maj("profilVelo", p)} style={styleBouton(seance.profilVelo === p)}>{p}</button>
+                <button key={p} onClick={() => maj("profilVelo", p)} style={sChip(seance.profilVelo === p)}>{p}</button>
               ))}
             </div>
           </div>
         )}
 
-        {/* SECTION ÉTAT PHYSIQUE */}
+        {/* ── ÉTAT PHYSIQUE ── */}
         {sectionActuelle === "physique" && (
           <div>
-            <p style={styleSectionTitre}>{numero} — {titreSection.physique}</p>
-            <Slider label="Énergie globale" valeur={seance.energie} onChange={v => maj("energie", v)} labelMin="Épuisé" labelMax="Au top" />
-            <Slider label="Sensation des jambes" valeur={seance.jambes} onChange={v => maj("jambes", v)} labelMin="Très lourdes" labelMax="Très légères" />
-            <Slider label="Effort cardio" valeur={seance.cardio} onChange={v => maj("cardio", v)} labelMin="Très facile" labelMax="Effort maximal" />
-            <Slider label="Difficulté respiratoire" valeur={seance.respiration} onChange={v => maj("respiration", v)} labelMin="Facile" labelMax="Très difficile" />
-            <Slider label="Niveau de douleur / gêne" valeur={seance.douleur} onChange={v => maj("douleur", v)} labelMin="Aucune douleur" labelMax="Douleur intense" />
+            <p style={sTitre}>{numero} — {titreSection.physique}</p>
+            <Slider label="Énergie globale" valeur={seance.energie} onChange={v => maj("energie", v)}
+              labelMin="Épuisé" labelMax="Au top" />
+            <Slider label="Sensation des jambes" valeur={seance.jambes} onChange={v => maj("jambes", v)}
+              labelMin="Très lourdes" labelMax="Très légères" />
+            <Slider label="Effort cardio" valeur={seance.cardio} onChange={v => maj("cardio", v)}
+              labelMin="Très facile" labelMax="Effort maximal" accent="var(--ft-cardio)" />
+            <Slider label="Difficulté respiratoire" valeur={seance.respiration} onChange={v => maj("respiration", v)}
+              labelMin="Facile" labelMax="Très difficile" accent="var(--ft-cardio)" />
+            <Slider label="Niveau de douleur / gêne" valeur={seance.douleur} onChange={v => maj("douleur", v)}
+              labelMin="Aucune douleur" labelMax="Douleur intense" accent="#F44336" />
           </div>
         )}
 
-        {/* SECTION RÉCUPÉRATION */}
+        {/* ── RÉCUPÉRATION ── */}
         {sectionActuelle === "recuperation" && (
           <div>
-            <p style={styleSectionTitre}>{numero} — {titreSection.recuperation}</p>
-            <Slider label="Qualité du sommeil la veille" valeur={seance.sommeil} onChange={v => maj("sommeil", v)} labelMin="Très mauvaise" labelMax="Excellente" />
-            <Slider label="Hydratation avant séance" valeur={seance.hydratation} onChange={v => maj("hydratation", v)} labelMin="Très déshydraté" labelMax="Très bien hydraté" />
-            <Slider label="Nutrition avant séance" valeur={seance.nutrition} onChange={v => maj("nutrition", v)} labelMin="Insuffisant" labelMax="Parfaitement nutritionné" />
-            <Slider label="Fatigue cumulée" valeur={seance.fatigue} onChange={v => maj("fatigue", v)} labelMin="Très fatigué" labelMax="Totalement reposé" />
+            <p style={sTitre}>{numero} — {titreSection.recuperation}</p>
+            <Slider label="Qualité du sommeil la veille" valeur={seance.sommeil} onChange={v => maj("sommeil", v)}
+              labelMin="Très mauvaise" labelMax="Excellente" />
+            <Slider label="Hydratation avant séance" valeur={seance.hydratation} onChange={v => maj("hydratation", v)}
+              labelMin="Très déshydraté" labelMax="Très bien hydraté" accent="var(--ft-cardio)" />
+            <Slider label="Nutrition avant séance" valeur={seance.nutrition} onChange={v => maj("nutrition", v)}
+              labelMin="Insuffisant" labelMax="Parfaitement nutritionné" />
+            <Slider label="Fatigue cumulée" valeur={seance.fatigue} onChange={v => maj("fatigue", v)}
+              labelMin="Très fatigué" labelMax="Totalement reposé" />
           </div>
         )}
 
-        {/* SECTION MENTAL */}
+        {/* ── MENTAL ── */}
         {sectionActuelle === "mental" && (
           <div>
-            <p style={styleSectionTitre}>{numero} — {titreSection.mental}</p>
-            <Slider label="Motivation avant séance" valeur={seance.motivation} onChange={v => maj("motivation", v)} labelMin="Aucune motivation" labelMax="Ultra motivé" />
-            <label style={styleLabel}>Ressenti pendant (plusieurs choix possibles)</label>
-            <div style={{ display: "flex", flexWrap: "wrap", marginBottom: "16px" }}>
+            <p style={sTitre}>{numero} — {titreSection.mental}</p>
+            <Slider label="Motivation avant séance" valeur={seance.motivation} onChange={v => maj("motivation", v)}
+              labelMin="Aucune motivation" labelMax="Ultra motivé" accent="var(--ft-snc)" />
+            <span style={sLabel}>Ressenti pendant (plusieurs choix possibles)</span>
+            <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 16 }}>
               {[
                 { id: "plaisir", label: "😊 Plaisir" }, { id: "neutre", label: "😐 Neutre" },
                 { id: "ennui", label: "😑 Ennui" }, { id: "souffrance", label: "😣 Souffrance" },
                 { id: "combatif", label: "💪 Combatif" }
               ].map(r => (
-                <button key={r.id} onClick={() => toggleRessenti(r.id)} style={styleBouton(seance.ressenti.includes(r.id))}>{r.label}</button>
+                <button key={r.id} onClick={() => toggleRessenti(r.id)}
+                  style={sChip(seance.ressenti.includes(r.id))}>{r.label}</button>
               ))}
             </div>
-            <Slider label="Gestion de l'effort" valeur={seance.gestionEffort} onChange={v => maj("gestionEffort", v)} labelMin="Parti trop vite" labelMax="Parfaitement géré" />
+            <Slider label="Gestion de l'effort" valeur={seance.gestionEffort} onChange={v => maj("gestionEffort", v)}
+              labelMin="Parti trop vite" labelMax="Parfaitement géré" accent="var(--ft-snc)" />
           </div>
         )}
 
-        {/* SECTION NUTRITION — compétition uniquement */}
+        {/* ── NUTRITION (compétition) ── */}
         {sectionActuelle === "nutrition" && (
           <div>
-            <p style={styleSectionTitre}>{numero} — {titreSection.nutrition}</p>
-            <div style={{ backgroundColor: "#1a2a1a", border: "1px solid #4CAF50", borderRadius: "8px", padding: "12px", marginBottom: "20px" }}>
-              <p style={{ fontSize: "12px", color: "#aaa", margin: 0 }}>
-                🏁 Cette section concerne uniquement la gestion nutritionnelle <strong style={{ color: "white" }}>pendant</strong> l'effort en compétition.
+            <p style={sTitre}>{numero} — {titreSection.nutrition}</p>
+            <div style={{
+              background: "var(--ft-surface)", borderRadius: "var(--ft-r-btn)",
+              padding: 14, marginBottom: 20,
+              borderLeft: "4px solid var(--ft-cardio)"
+            }}>
+              <p style={{ fontSize: 12, color: "var(--ft-muted)", margin: 0, lineHeight: 1.6 }}>
+                🏁 Cette section concerne la gestion nutritionnelle <strong style={{ color: "var(--ft-ink)" }}>pendant</strong> l'effort en compétition.
               </p>
             </div>
-            <Slider label="Apport en glucides (gels, barres, boissons)" valeur={seance.quantiteGlucides} onChange={v => maj("quantiteGlucides", v)} labelMin="Très insuffisant" labelMax="Très bien géré" />
-            <Slider label="Tolérance digestive" valeur={seance.toleranceDigestive} onChange={v => maj("toleranceDigestive", v)} labelMin="Gros problèmes" labelMax="Aucun souci" />
-            <Slider label="Hydratation pendant l'effort" valeur={seance.hydratationCourse} onChange={v => maj("hydratationCourse", v)} labelMin="Très insuffisant" labelMax="Parfaite" />
+            <Slider label="Apport en glucides (gels, barres, boissons)" valeur={seance.quantiteGlucides}
+              onChange={v => maj("quantiteGlucides", v)} labelMin="Très insuffisant" labelMax="Très bien géré" />
+            <Slider label="Tolérance digestive" valeur={seance.toleranceDigestive}
+              onChange={v => maj("toleranceDigestive", v)} labelMin="Gros problèmes" labelMax="Aucun souci" />
+            <Slider label="Hydratation pendant l'effort" valeur={seance.hydratationCourse}
+              onChange={v => maj("hydratationCourse", v)} labelMin="Très insuffisant" labelMax="Parfaite"
+              accent="var(--ft-cardio)" />
           </div>
         )}
 
-        {/* SECTION NOTE LIBRE */}
+        {/* ── NOTE LIBRE ── */}
         {sectionActuelle === "note" && (
           <div>
-            <p style={styleSectionTitre}>{numero} — {titreSection.note}</p>
-            <label style={styleLabel}>Sensations, contexte, remarques personnelles...</label>
+            <p style={sTitre}>{numero} — {titreSection.note}</p>
+            <span style={sLabel}>Sensations, contexte, remarques personnelles…</span>
             <textarea value={seance.note} onChange={e => maj("note", e.target.value)}
               placeholder="Comment s'est vraiment passée cette séance ?" rows={8}
-              style={{ ...styleInput, resize: "vertical", lineHeight: "1.6" }} />
+              style={{
+                ...sInput, resize: "vertical", lineHeight: 1.6,
+                fontFamily: "var(--ft-font-body)"
+              }} />
           </div>
         )}
 
         {/* Navigation */}
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "32px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 32, gap: 12 }}>
           <button onClick={precedent} style={{
-            padding: "14px 24px",
-            backgroundColor: sectionIdx === 0 ? "transparent" : "#2a2a2a",
-            color: sectionIdx === 0 ? "transparent" : "white",
-            border: "none", borderRadius: "10px", fontSize: "15px",
-            cursor: sectionIdx === 0 ? "default" : "pointer"
+            padding: "13px 20px",
+            background: sectionIdx === 0 ? "transparent" : "var(--ft-surface)",
+            color: sectionIdx === 0 ? "transparent" : "var(--ft-muted)",
+            border: "none", borderRadius: "var(--ft-r-btn)",
+            fontSize: 14, cursor: sectionIdx === 0 ? "default" : "pointer",
+            fontFamily: "var(--ft-font-body)", pointerEvents: sectionIdx === 0 ? "none" : "auto"
           }}>
             ← Précédent
           </button>
           <button onClick={suivant} style={{
-            padding: "14px 24px", backgroundColor: "#4CAF50",
-            color: "white", border: "none", borderRadius: "10px",
-            fontSize: "15px", fontWeight: "bold", cursor: "pointer"
+            flex: 1, padding: "13px 20px",
+            background: "var(--ft-snc)", color: "#fff", border: "none",
+            borderRadius: "var(--ft-r-btn)", fontSize: 15, fontWeight: 700,
+            cursor: "pointer", fontFamily: "var(--ft-font-body)",
+            boxShadow: "0 6px 20px rgba(124,111,240,0.35)"
           }}>
-            {sectionIdx === total - 1 ? "Valider ✓" : "Suivant →"}
+            {sectionIdx === total - 1 ? "Enregistrer ma séance ✓" : "Suivant →"}
           </button>
         </div>
 
