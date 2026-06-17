@@ -1,11 +1,5 @@
 import { useState } from "react"
 
-// 🎨 Styles réutilisables
-const styleLabel = { fontSize: "13px", color: "#888", marginBottom: "6px", display: "block" as const }
-const styleInput = { width: "100%", padding: "12px", backgroundColor: "#2a2a2a", border: "1px solid #333", borderRadius: "8px", color: "white", fontSize: "15px", outline: "none", marginBottom: "16px" }
-const styleSectionTitre = { fontSize: "16px", fontWeight: "bold" as const, color: "#ffffff", marginBottom: "16px", paddingBottom: "8px", borderBottom: "1px solid #2a2a2a" }
-
-// 🏅 Sports avec coefficients par défaut
 const SPORTS_DEFAUT = [
   { id: "trail", label: "Trail", emoji: "🌄", coef: 0.98 },
   { id: "course", label: "Course à pied", emoji: "🏃", coef: 0.78 },
@@ -13,37 +7,45 @@ const SPORTS_DEFAUT = [
   { id: "velo", label: "Vélo route", emoji: "🚴", coef: 0.70 },
 ]
 
-// 🎨 Couleur coefficient
 const getCouleurCoef = (coef: number) => {
-  if (coef >= 0.9) return "#4CAF50"
+  if (coef >= 0.9) return "var(--ft-cardio)"
   if (coef >= 0.75) return "#FFC107"
   return "#FF9800"
 }
+
+const styleInput = {
+  width: "100%", padding: "12px 14px",
+  background: "var(--ft-surface)", border: "none",
+  borderRadius: "var(--ft-r-input)", color: "var(--ft-ink)",
+  fontSize: 15, outline: "none", marginBottom: 16,
+  fontFamily: "var(--ft-font-body)"
+} as const
 
 export default function Parametres({ onFermer }: { onFermer: () => void }) {
   const [section, setSection] = useState("profil")
   const [confirmerSuppression, setConfirmerSuppression] = useState(false)
   const [messageSauvegarde, setMessageSauvegarde] = useState("")
 
-  // 👤 Profil
   const [pseudo, setPseudo] = useState(localStorage.getItem("pseudo") || "")
   const [age, setAge] = useState(localStorage.getItem("age") || "")
   const [poids, setPoids] = useState(localStorage.getItem("poids") || "")
   const [taille, setTaille] = useState(localStorage.getItem("taille") || "")
   const [sportPrincipal, setSportPrincipal] = useState(localStorage.getItem("sportPrincipal") || "")
 
-  // 🎯 Objectifs
   const [objDistance, setObjDistance] = useState(localStorage.getItem("obj_distance") || "100")
   const [objSeances, setObjSeances] = useState(localStorage.getItem("obj_seances") || "12")
   const [objScore, setObjScore] = useState(localStorage.getItem("obj_score") || "75")
 
-  // 📐 Coefficients
   const [coefficients, setCoefficients] = useState(() => {
     const saved = localStorage.getItem("coefficients")
     return saved ? JSON.parse(saved) : SPORTS_DEFAUT.reduce((acc, s) => ({ ...acc, [s.id]: s.coef }), {})
   })
 
-  // 💾 Sauvegarder profil
+  const afficherMessage = (msg: string) => {
+    setMessageSauvegarde(msg)
+    setTimeout(() => setMessageSauvegarde(""), 2500)
+  }
+
   const sauvegarderProfil = () => {
     localStorage.setItem("pseudo", pseudo)
     localStorage.setItem("age", age)
@@ -53,7 +55,6 @@ export default function Parametres({ onFermer }: { onFermer: () => void }) {
     afficherMessage("Profil sauvegardé ✓")
   }
 
-  // 💾 Sauvegarder objectifs
   const sauvegarderObjectifs = () => {
     localStorage.setItem("obj_distance", objDistance)
     localStorage.setItem("obj_seances", objSeances)
@@ -61,13 +62,11 @@ export default function Parametres({ onFermer }: { onFermer: () => void }) {
     afficherMessage("Objectifs sauvegardés ✓")
   }
 
-  // 💾 Sauvegarder coefficients
   const sauvegarderCoefficients = () => {
     localStorage.setItem("coefficients", JSON.stringify(coefficients))
     afficherMessage("Coefficients sauvegardés ✓")
   }
 
-  // 🔄 Réinitialiser coefficients
   const reinitialiserCoefficients = () => {
     const defaut = SPORTS_DEFAUT.reduce((acc, s) => ({ ...acc, [s.id]: s.coef }), {})
     setCoefficients(defaut)
@@ -75,91 +74,106 @@ export default function Parametres({ onFermer }: { onFermer: () => void }) {
     afficherMessage("Coefficients réinitialisés ✓")
   }
 
-  // 🗑️ Effacer toutes les séances
   const effacerSeances = () => {
     localStorage.removeItem("seances")
     setConfirmerSuppression(false)
     afficherMessage("Toutes les séances ont été supprimées")
   }
 
-  // ✅ Message temporaire
-  const afficherMessage = (msg: string) => {
-    setMessageSauvegarde(msg)
-    setTimeout(() => setMessageSauvegarde(""), 2500)
-  }
+  const sections = [
+    { id: "profil", label: "Profil" },
+    { id: "objectifs", label: "Objectifs" },
+    { id: "coefficients", label: "Coefficients" },
+    { id: "donnees", label: "Données" },
+  ]
 
   return (
-    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.9)", zIndex: 200, overflowY: "auto", padding: "20px" }}>
-      <div style={{ maxWidth: "480px", margin: "0 auto", backgroundColor: "#121212", borderRadius: "16px", padding: "24px" }}>
+    <div style={{
+      position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+      background: "rgba(33, 27, 46, 0.7)", backdropFilter: "blur(6px)",
+      zIndex: 200, overflowY: "auto", padding: 20
+    }}>
+      <div style={{
+        maxWidth: 480, margin: "0 auto",
+        background: "var(--ft-surface)", borderRadius: "var(--ft-r-card)",
+        padding: 24, boxShadow: "var(--ft-shadow-lift)"
+      }}>
 
         {/* En-tête */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-          <h2 style={{ fontSize: "20px", color: "white" }}>⚙️ Paramètres</h2>
-          <button onClick={onFermer} style={{ backgroundColor: "transparent", border: "none", color: "#888", fontSize: "24px", cursor: "pointer" }}>✕</button>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <h2 style={{
+            fontFamily: "var(--ft-font-display)", fontSize: 20, fontWeight: 700,
+            color: "var(--ft-ink)", margin: 0
+          }}>Paramètres</h2>
+          <button onClick={onFermer} style={{
+            background: "var(--ft-card)", border: "none", color: "var(--ft-muted)",
+            fontSize: 20, cursor: "pointer", width: 36, height: 36,
+            borderRadius: "var(--ft-r-orb)", display: "flex",
+            alignItems: "center", justifyContent: "center",
+            boxShadow: "var(--ft-shadow-soft)"
+          }}>✕</button>
         </div>
 
         {/* Message sauvegarde */}
         {messageSauvegarde && (
-          <div style={{ backgroundColor: "#1a3a1a", border: "1px solid #4CAF50", borderRadius: "8px", padding: "10px 16px", marginBottom: "16px", textAlign: "center" }}>
-            <p style={{ color: "#4CAF50", fontSize: "13px", margin: 0 }}>{messageSauvegarde}</p>
+          <div style={{
+            background: "var(--ft-card)", borderRadius: "var(--ft-r-btn)",
+            padding: "10px 16px", marginBottom: 16, textAlign: "center",
+            boxShadow: "var(--ft-shadow-soft)",
+            borderLeft: "4px solid var(--ft-cardio)"
+          }}>
+            <p style={{ color: "var(--ft-cardio)", fontSize: 13, margin: 0 }}>{messageSauvegarde}</p>
           </div>
         )}
 
-        {/* Onglets sections */}
-        <div style={{ display: "flex", gap: "6px", marginBottom: "24px" }}>
-          {[
-            { id: "profil", label: "👤 Profil" },
-            { id: "objectifs", label: "🎯 Objectifs" },
-            { id: "coefficients", label: "📐 Coefficients" },
-            { id: "donnees", label: "🗂️ Données" },
-          ].map(s => (
+        {/* Onglets */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 24 }}>
+          {sections.map(s => (
             <button key={s.id} onClick={() => setSection(s.id)} style={{
-              flex: 1, padding: "10px 4px", fontSize: "11px",
-              backgroundColor: section === s.id ? "#1a73e8" : "#1e1e1e",
-              color: section === s.id ? "white" : "#555",
-              border: section === s.id ? "1px solid #1a73e8" : "1px solid #2a2a2a",
-              borderRadius: "8px", cursor: "pointer"
+              flex: 1, padding: "9px 4px", fontSize: 11,
+              background: section === s.id ? "var(--ft-ink)" : "var(--ft-card)",
+              color: section === s.id ? "#fff" : "var(--ft-muted)",
+              border: "none", borderRadius: "var(--ft-r-btn)",
+              fontWeight: section === s.id ? 600 : 400,
+              cursor: "pointer", fontFamily: "var(--ft-font-body)",
+              boxShadow: "var(--ft-shadow-soft)"
             }}>
               {s.label}
             </button>
           ))}
         </div>
 
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         {/* SECTION PROFIL */}
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         {section === "profil" && (
           <div>
-            <p style={styleSectionTitre}>👤 Mon profil</p>
-
-            <label style={styleLabel}>Pseudo</label>
+            <p style={{ fontSize: 13, color: "var(--ft-muted)", marginBottom: 6 }}>Pseudo</p>
             <input type="text" value={pseudo} onChange={e => setPseudo(e.target.value)}
               placeholder="Ton prénom ou pseudo" style={styleInput} />
 
-            <div style={{ display: "flex", gap: "12px" }}>
+            <div style={{ display: "flex", gap: 12 }}>
               <div style={{ flex: 1 }}>
-                <label style={styleLabel}>Âge</label>
+                <p style={{ fontSize: 13, color: "var(--ft-muted)", marginBottom: 6 }}>Âge</p>
                 <input type="number" value={age} onChange={e => setAge(e.target.value)}
-                  placeholder="Ex: 32" style={styleInput} />
+                  placeholder="32" style={styleInput} />
               </div>
               <div style={{ flex: 1 }}>
-                <label style={styleLabel}>Poids (kg)</label>
+                <p style={{ fontSize: 13, color: "var(--ft-muted)", marginBottom: 6 }}>Poids (kg)</p>
                 <input type="number" value={poids} onChange={e => setPoids(e.target.value)}
-                  placeholder="Ex: 72" style={styleInput} />
+                  placeholder="72" style={styleInput} />
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "12px" }}>
+            <div style={{ display: "flex", gap: 12 }}>
               <div style={{ flex: 1 }}>
-                <label style={styleLabel}>Taille (cm)</label>
+                <p style={{ fontSize: 13, color: "var(--ft-muted)", marginBottom: 6 }}>Taille (cm)</p>
                 <input type="number" value={taille} onChange={e => setTaille(e.target.value)}
-                  placeholder="Ex: 178" style={styleInput} />
+                  placeholder="178" style={styleInput} />
               </div>
               <div style={{ flex: 1 }}>
-                <label style={styleLabel}>Sport principal</label>
+                <p style={{ fontSize: 13, color: "var(--ft-muted)", marginBottom: 6 }}>Sport principal</p>
                 <select value={sportPrincipal} onChange={e => setSportPrincipal(e.target.value)}
-                  style={{ ...styleInput, cursor: "pointer" }}>
-                  <option value="">Choisir...</option>
+                  style={{ ...styleInput, cursor: "pointer", appearance: "auto" }}>
+                  <option value="">Choisir…</option>
                   {SPORTS_DEFAUT.map(s => (
                     <option key={s.id} value={s.id}>{s.emoji} {s.label}</option>
                   ))}
@@ -167,89 +181,89 @@ export default function Parametres({ onFermer }: { onFermer: () => void }) {
               </div>
             </div>
 
-            {/* Note poids/taille */}
-            <div style={{ backgroundColor: "#1a2a3a", border: "1px solid #1a73e8", borderRadius: "8px", padding: "12px", marginBottom: "20px" }}>
-              <p style={{ fontSize: "12px", color: "#aaa", lineHeight: "1.6", margin: 0 }}>
-                ℹ️ Le poids et la taille sont collectés pour de futures fonctionnalités. Le rapport poids/puissance influence la fatigue et la récupération — un athlète plus musclé encaisse mieux les charges élevées. Ces données seront intégrées aux calculs dans une prochaine version.
+            <div style={{
+              background: "var(--ft-card)", borderRadius: "var(--ft-r-btn)",
+              padding: 14, marginBottom: 20, boxShadow: "var(--ft-shadow-soft)"
+            }}>
+              <p style={{ fontSize: 12, color: "var(--ft-muted)", lineHeight: 1.6, margin: 0 }}>
+                ℹ️ Le poids et la taille sont collectés pour de futures fonctionnalités. Le rapport poids/puissance influence la fatigue et la récupération — un athlète plus musclé encaisse mieux les charges élevées.
               </p>
             </div>
 
             <button onClick={sauvegarderProfil} style={{
-              width: "100%", padding: "14px", backgroundColor: "#4CAF50",
-              color: "white", border: "none", borderRadius: "10px",
-              fontSize: "15px", fontWeight: "bold", cursor: "pointer"
+              width: "100%", padding: "14px 22px",
+              background: "var(--ft-ink)", color: "#fff", border: "none",
+              borderRadius: "var(--ft-r-btn)", fontSize: 15, fontWeight: 600,
+              cursor: "pointer", fontFamily: "var(--ft-font-body)",
+              boxShadow: "var(--ft-shadow-soft)"
             }}>
-              💾 Sauvegarder le profil
+              Sauvegarder le profil
             </button>
           </div>
         )}
 
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         {/* SECTION OBJECTIFS */}
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         {section === "objectifs" && (
           <div>
-            <p style={styleSectionTitre}>🎯 Mes objectifs mensuels</p>
-
-            <label style={styleLabel}>Distance mensuelle cible (km)</label>
+            <p style={{ fontSize: 13, color: "var(--ft-muted)", marginBottom: 6 }}>Distance mensuelle cible (km)</p>
             <input type="number" value={objDistance} onChange={e => setObjDistance(e.target.value)}
-              placeholder="Ex: 100" style={styleInput} />
+              placeholder="100" style={styleInput} />
 
-            <label style={styleLabel}>Nombre de séances par mois</label>
+            <p style={{ fontSize: 13, color: "var(--ft-muted)", marginBottom: 6 }}>Nombre de séances par mois</p>
             <input type="number" value={objSeances} onChange={e => setObjSeances(e.target.value)}
-              placeholder="Ex: 12" style={styleInput} />
+              placeholder="12" style={styleInput} />
 
-            <label style={styleLabel}>Score de forme cible (0-100)</label>
+            <p style={{ fontSize: 13, color: "var(--ft-muted)", marginBottom: 8 }}>Score de forme cible (0–100)</p>
             <input type="range" min="40" max="100" value={objScore}
               onChange={e => setObjScore(e.target.value)}
-              style={{ width: "100%", accentColor: "#1a73e8", marginBottom: "4px" }} />
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#555", marginBottom: "20px" }}>
+              style={{ width: "100%", accentColor: "#7C6FF0", marginBottom: 6 }} />
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--ft-muted)", marginBottom: 20 }}>
               <span>40</span>
-              <span style={{ color: "white", fontWeight: "bold" }}>Cible : {objScore}/100</span>
+              <span style={{
+                fontFamily: "var(--ft-font-data)", color: "var(--ft-ink)", fontWeight: 500
+              }}>Cible : {objScore}/100</span>
               <span>100</span>
             </div>
 
             <button onClick={sauvegarderObjectifs} style={{
-              width: "100%", padding: "14px", backgroundColor: "#4CAF50",
-              color: "white", border: "none", borderRadius: "10px",
-              fontSize: "15px", fontWeight: "bold", cursor: "pointer"
+              width: "100%", padding: "14px 22px",
+              background: "var(--ft-ink)", color: "#fff", border: "none",
+              borderRadius: "var(--ft-r-btn)", fontSize: 15, fontWeight: 600,
+              cursor: "pointer", fontFamily: "var(--ft-font-body)",
+              boxShadow: "var(--ft-shadow-soft)"
             }}>
-              💾 Sauvegarder les objectifs
+              Sauvegarder les objectifs
             </button>
           </div>
         )}
 
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         {/* SECTION COEFFICIENTS */}
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         {section === "coefficients" && (
           <div>
-            <p style={styleSectionTitre}>📐 Coefficients par sport</p>
-
-            {/* Message scientifique */}
-            <div style={{ backgroundColor: "#1a2a1a", border: "1px solid #4CAF50", borderRadius: "10px", padding: "14px", marginBottom: "20px" }}>
-              <p style={{ fontSize: "13px", color: "#4CAF50", fontWeight: "bold", marginBottom: "6px" }}>
-                🔬 Base scientifique
+            <div style={{
+              background: "var(--ft-card)", borderRadius: "var(--ft-r-btn)",
+              padding: 16, marginBottom: 24, boxShadow: "var(--ft-shadow-soft)",
+              borderLeft: "4px solid var(--ft-cardio)"
+            }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ft-cardio)", marginBottom: 6 }}>
+                Base scientifique
               </p>
-              <p style={{ fontSize: "12px", color: "#aaa", lineHeight: "1.6", margin: 0 }}>
-                Ces coefficients ont été établis en s'appuyant sur des données issues de la physiologie du sport et de la science de l'entraînement. Ils reflètent la charge globale réelle de chaque discipline — en tenant compte de la sollicitation du système nerveux central, de la fatigue musculaire et de l'intensité cardiovasculaire.
-              </p>
-              <p style={{ fontSize: "12px", color: "#888", lineHeight: "1.6", margin: "8px 0 0" }}>
-                Tu peux les ajuster selon ton ressenti personnel, mais les valeurs par défaut constituent une base scientifiquement cohérente. Un bouton "Réinitialiser" te permet de revenir aux valeurs d'origine à tout moment.
+              <p style={{ fontSize: 12, color: "var(--ft-muted)", lineHeight: 1.6, margin: 0 }}>
+                Ces coefficients reflètent la charge globale réelle de chaque discipline — sollicitation SNC, fatigue musculaire et intensité cardiovasculaire. Tu peux les ajuster selon ton ressenti.
               </p>
             </div>
 
-            {/* Curseurs par sport */}
             {SPORTS_DEFAUT.map(sport => (
-              <div key={sport.id} style={{ marginBottom: "20px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                  <label style={{ fontSize: "14px", color: "white" }}>
+              <div key={sport.id} style={{ marginBottom: 20 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <label style={{ fontSize: 14, fontWeight: 500, color: "var(--ft-ink)" }}>
                     {sport.emoji} {sport.label}
                   </label>
                   <span style={{
-                    fontSize: "14px", fontWeight: "bold",
+                    fontFamily: "var(--ft-font-data)", fontSize: 14, fontWeight: 500,
                     color: getCouleurCoef(coefficients[sport.id]),
-                    backgroundColor: "#2a2a2a", padding: "2px 10px", borderRadius: "10px"
+                    background: "var(--ft-surface)", padding: "2px 10px",
+                    borderRadius: "var(--ft-r-chip)"
                   }}>
                     ×{parseFloat(coefficients[sport.id]).toFixed(2)}
                   </span>
@@ -260,95 +274,105 @@ export default function Parametres({ onFermer }: { onFermer: () => void }) {
                   onChange={e => setCoefficients((prev: any) => ({ ...prev, [sport.id]: parseFloat(e.target.value) }))}
                   style={{ width: "100%", accentColor: getCouleurCoef(coefficients[sport.id]) }}
                 />
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px", color: "#555", marginTop: "2px" }}>
-                  <span>Effort léger (0.1)</span>
-                  <span style={{ color: "#555", fontSize: "10px" }}>
-                    Défaut : ×{sport.coef}
-                  </span>
-                  <span>Effort maximal (1.0)</span>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>
+                  <span>Léger (0.1)</span>
+                  <span>Défaut : ×{sport.coef}</span>
+                  <span>Maximal (1.0)</span>
                 </div>
               </div>
             ))}
 
-            <div style={{ display: "flex", gap: "10px" }}>
+            <div style={{ display: "flex", gap: 10 }}>
               <button onClick={reinitialiserCoefficients} style={{
-                flex: 1, padding: "14px", backgroundColor: "#2a2a2a",
-                color: "#888", border: "1px solid #333", borderRadius: "10px",
-                fontSize: "14px", cursor: "pointer"
+                flex: 1, padding: 14,
+                background: "var(--ft-card)", color: "var(--ft-muted)",
+                border: "none", borderRadius: "var(--ft-r-btn)",
+                fontSize: 14, cursor: "pointer", fontFamily: "var(--ft-font-body)",
+                boxShadow: "var(--ft-shadow-soft)"
               }}>
-                🔄 Réinitialiser
+                Réinitialiser
               </button>
               <button onClick={sauvegarderCoefficients} style={{
-                flex: 2, padding: "14px", backgroundColor: "#4CAF50",
-                color: "white", border: "none", borderRadius: "10px",
-                fontSize: "15px", fontWeight: "bold", cursor: "pointer"
+                flex: 2, padding: 14,
+                background: "var(--ft-ink)", color: "#fff",
+                border: "none", borderRadius: "var(--ft-r-btn)",
+                fontSize: 15, fontWeight: 600, cursor: "pointer",
+                fontFamily: "var(--ft-font-body)", boxShadow: "var(--ft-shadow-soft)"
               }}>
-                💾 Sauvegarder
+                Sauvegarder
               </button>
             </div>
           </div>
         )}
 
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         {/* SECTION DONNÉES */}
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         {section === "donnees" && (
           <div>
-            <p style={styleSectionTitre}>🗂️ Mes données</p>
-
-            {/* Infos stockage */}
-            <div style={{ backgroundColor: "#1e1e1e", borderRadius: "12px", padding: "16px", marginBottom: "16px", border: "1px solid #2a2a2a" }}>
-              <p style={{ fontSize: "14px", color: "white", marginBottom: "8px" }}>📊 Stockage local</p>
+            <div style={{
+              background: "var(--ft-card)", borderRadius: "var(--ft-r-card)",
+              padding: 16, marginBottom: 12, boxShadow: "var(--ft-shadow-soft)"
+            }}>
+              <p style={{ fontSize: 14, fontWeight: 500, color: "var(--ft-ink)", marginBottom: 6 }}>Stockage local</p>
               {(() => {
                 const seances = JSON.parse(localStorage.getItem("seances") || "[]")
                 return (
-                  <p style={{ fontSize: "13px", color: "#888", margin: 0 }}>
-                    {seances.length} séance(s) enregistrée(s) sur cet appareil
+                  <p style={{ fontSize: 13, color: "var(--ft-muted)", margin: 0 }}>
+                    {seances.length} séance{seances.length > 1 ? "s" : ""} enregistrée{seances.length > 1 ? "s" : ""} sur cet appareil
                   </p>
                 )
               })()}
             </div>
 
-            {/* Version app */}
-            <div style={{ backgroundColor: "#1e1e1e", borderRadius: "12px", padding: "16px", marginBottom: "24px", border: "1px solid #2a2a2a" }}>
-              <p style={{ fontSize: "14px", color: "white", marginBottom: "4px" }}>📱 FeelTrack</p>
-              <p style={{ fontSize: "12px", color: "#555", margin: 0 }}>Version 1.0.0 — Développé avec ❤️</p>
+            <div style={{
+              background: "var(--ft-card)", borderRadius: "var(--ft-r-card)",
+              padding: 16, marginBottom: 24, boxShadow: "var(--ft-shadow-soft)"
+            }}>
+              <p style={{ fontSize: 14, fontWeight: 500, color: "var(--ft-ink)", marginBottom: 2 }}>FeelTrack</p>
+              <p style={{ fontSize: 12, color: "var(--ft-muted)", margin: 0 }}>Version 1.0.0</p>
             </div>
 
-            {/* Danger zone */}
-            <div style={{ backgroundColor: "#1a0000", border: "1px solid #F44336", borderRadius: "12px", padding: "16px" }}>
-              <p style={{ fontSize: "14px", color: "#F44336", fontWeight: "bold", marginBottom: "8px" }}>
-                ⚠️ Zone dangereuse
+            {/* Zone dangereuse */}
+            <div style={{
+              background: "var(--ft-card)", borderRadius: "var(--ft-r-card)",
+              padding: 16, boxShadow: "var(--ft-shadow-soft)",
+              borderLeft: "4px solid #F44336"
+            }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: "#F44336", marginBottom: 8 }}>
+                Zone dangereuse
               </p>
-              <p style={{ fontSize: "13px", color: "#888", marginBottom: "16px" }}>
-                La suppression de toutes les séances est irréversible. Toutes tes données d'entraînement seront perdues définitivement.
+              <p style={{ fontSize: 13, color: "var(--ft-muted)", marginBottom: 16, lineHeight: 1.5 }}>
+                La suppression de toutes les séances est irréversible. Toutes tes données d'entraînement seront perdues.
               </p>
 
               {!confirmerSuppression ? (
                 <button onClick={() => setConfirmerSuppression(true)} style={{
-                  width: "100%", padding: "14px", backgroundColor: "transparent",
-                  color: "#F44336", border: "1px solid #F44336", borderRadius: "10px",
-                  fontSize: "14px", cursor: "pointer"
+                  width: "100%", padding: 14,
+                  background: "transparent", color: "#F44336",
+                  border: "1px solid #F44336", borderRadius: "var(--ft-r-btn)",
+                  fontSize: 14, cursor: "pointer", fontFamily: "var(--ft-font-body)"
                 }}>
-                  🗑️ Effacer toutes mes séances
+                  Effacer toutes mes séances
                 </button>
               ) : (
                 <div>
-                  <p style={{ fontSize: "13px", color: "#F44336", marginBottom: "12px", textAlign: "center" }}>
+                  <p style={{ fontSize: 13, color: "#F44336", marginBottom: 12, textAlign: "center" }}>
                     Tu es sûr ? Cette action est irréversible.
                   </p>
-                  <div style={{ display: "flex", gap: "10px" }}>
+                  <div style={{ display: "flex", gap: 10 }}>
                     <button onClick={() => setConfirmerSuppression(false)} style={{
-                      flex: 1, padding: "14px", backgroundColor: "#2a2a2a",
-                      color: "white", border: "none", borderRadius: "10px",
-                      fontSize: "14px", cursor: "pointer"
+                      flex: 1, padding: 14,
+                      background: "var(--ft-surface)", color: "var(--ft-ink)",
+                      border: "none", borderRadius: "var(--ft-r-btn)",
+                      fontSize: 14, cursor: "pointer", fontFamily: "var(--ft-font-body)"
                     }}>
                       Annuler
                     </button>
                     <button onClick={effacerSeances} style={{
-                      flex: 1, padding: "14px", backgroundColor: "#F44336",
-                      color: "white", border: "none", borderRadius: "10px",
-                      fontSize: "14px", fontWeight: "bold", cursor: "pointer"
+                      flex: 1, padding: 14,
+                      background: "#F44336", color: "#fff",
+                      border: "none", borderRadius: "var(--ft-r-btn)",
+                      fontSize: 14, fontWeight: 600, cursor: "pointer",
+                      fontFamily: "var(--ft-font-body)"
                     }}>
                       Confirmer
                     </button>

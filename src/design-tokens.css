@@ -1,0 +1,71 @@
+/* =========================================================
+   FeelTrack — design tokens
+   À importer UNE fois (ex. dans main.tsx : import "./design-tokens.css";
+   ou en haut de ton index.css).
+
+   Polices à charger (gratuites). Ajoute dans index.html <head> :
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+   Bricolage Grotesque : https://fonts.google.com/specimen/Bricolage+Grotesque
+   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&display=swap" rel="stylesheet">
+   ========================================================= */
+
+:root {
+  /* — Base — */
+  --ft-surface: #FAF8FF;
+  --ft-card:    #FFFFFF;
+  --ft-ink:     #211B2E;
+  --ft-muted:   #6B6478;
+  --ft-line:    #ECE7F2;
+
+  /* — 3 axes FeelTrack (structurels) — */
+  --ft-snc:     #7C6FF0;  /* nerveux / mental  35% */
+  --ft-muscle:  #FF7A66;  /* musculaire        35% */
+  --ft-cardio:  #2DD4BF;  /* cardio            30% */
+
+  /* — Rayons (différenciés) — */
+  --ft-r-orb:   9999px;
+  --ft-r-card:  24px;
+  --ft-r-chip:  9999px;
+  --ft-r-btn:   16px;
+  --ft-r-input: 14px;
+
+  /* — Ombres douces (pas de bordures dures) — */
+  --ft-shadow-soft: 0 6px 24px rgba(33, 27, 46, 0.08);
+  --ft-shadow-lift: 0 12px 40px rgba(124, 111, 240, 0.18);
+
+  /* — Espacement (multiples de 8) — */
+  --ft-space-1: 8px;
+  --ft-space-2: 16px;
+  --ft-space-3: 24px;
+  --ft-space-4: 32px;
+  --ft-space-6: 48px;
+
+  /* — Typo — */
+  --ft-font-display: "Bricolage Grotesque", system-ui, sans-serif;
+  --ft-font-body:    "Hanken Grotesk", system-ui, sans-serif;
+  --ft-font-data:    "Geist Mono", "JetBrains Mono", monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ft-surface: #1A1622;
+    --ft-card:    #241E30;
+    --ft-ink:     #F4F1FA;
+    --ft-muted:   #A79FB5;
+    --ft-line:    #322A40;
+    --ft-shadow-soft: 0 6px 24px rgba(0, 0, 0, 0.35);
+    --ft-shadow-lift: 0 12px 40px rgba(124, 111, 240, 0.30);
+  }
+}
+
+/* Respiration de l'orbe — utilisée par SensationOrb */
+@keyframes ft-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.03); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ft-orb-breathe { animation: none !important; }
+}

@@ -3,24 +3,9 @@ import Formulaire from "./formulaire"
 import Historique from "./historique"
 import Profil from "./profil"
 import Parametres from "./parametres"
+import SensationOrb from "./SensationOrb"
 
-// 🎨 Couleur forme (0-100)
-const getCouleurForme = (v: number) => {
-  if (v >= 75) return "#4CAF50"
-  if (v >= 60) return "#FFC107"
-  if (v >= 40) return "#FF9800"
-  return "#F44336"
-}
-
-// 🎨 Couleur charge (0-200)
-const getCouleurCharge = (v: number) => {
-  if (v <= 30) return "#4A90E2"
-  if (v <= 60) return "#4CAF50"
-  if (v <= 90) return "#FF9800"
-  return "#F44336"
-}
-
-// 🏷️ Statut d'entraînement (méthode ACWR)
+// Statut d'entraînement (méthode ACWR)
 const getStatut = (seances: any[]) => {
   const avecDonnees = seances.filter((s: any) => s.charge !== undefined && s.forme !== undefined)
   if (avecDonnees.length < 2) return null
@@ -32,28 +17,45 @@ const getStatut = (seances: any[]) => {
   const s7j = avecDonnees.filter((s: any) => diffJours(s.date) <= 7)
   const s28j = avecDonnees.filter((s: any) => diffJours(s.date) <= 28)
 
-  const chargeAigue = s7j.length > 0
-    ? s7j.reduce((a: number, s: any) => a + s.charge, 0) / 7
-    : 0
-  const chargeChronique = s28j.length > 0
-    ? s28j.reduce((a: number, s: any) => a + s.charge, 0) / 28
-    : chargeAigue
-
-  const acwr = chargeChronique > 0 ? chargeAigue / chargeChronique : 1.0
   const formeMoy = avecDonnees.slice(0, 3).reduce((a: number, s: any) => a + s.forme, 0) /
     Math.min(3, avecDonnees.length)
 
-  if (acwr > 1.5 && formeMoy < 45)
-    return { emoji: "🔴", label: "Surmenage détecté", message: "Repos obligatoire — ton corps est en surcharge", couleur: "#F44336" }
-  if (acwr > 1.3)
-    return { emoji: "🟠", label: "Charge élevée", message: "Réduis l'intensité, surveille ta récupération", couleur: "#FF9800" }
-  if (acwr < 0.8 && formeMoy < 50)
-    return { emoji: "⚪", label: "Récupération", message: "Charge faible, forme basse — récupération en cours", couleur: "#888" }
-  if (formeMoy >= 70 && acwr >= 0.8 && acwr <= 1.3)
-    return { emoji: "🟢", label: "Forme optimale", message: "Charge équilibrée et forme au top — continue !", couleur: "#4CAF50" }
-  if (acwr >= 1.0 && acwr <= 1.3 && formeMoy >= 50)
-    return { emoji: "🔵", label: "En progression", message: "Charge productive — veille à bien récupérer", couleur: "#1a73e8" }
-  return { emoji: "🟡", label: "Maintenance", message: "Charge stable — maintiens le rythme", couleur: "#FFC107" }
+  // Nécessite au moins 3 séances de plus de 7 jours pour un ACWR fiable
+  const seancesAnciennes = avecDonnees.filter((s: any) => diffJours(s.date) > 7)
+  if (seancesAnciennes.length < 3) {
+    if (formeMoy >= 70) return { label: "Forme optimale", message: "Bon départ ! Continue à enregistrer tes séances pour affiner le statut.", couleur: "var(--ft-cardio)" }
+    return { label: "Démarrage", message: "Enregistre quelques semaines de séances pour activer le suivi de charge.", couleur: "#FFC107" }
+  }
+
+  const chargeAigue = s7j.length > 0 ? s7j.reduce((a: number, s: any) => a + s.charge, 0) / 7 : 0
+  const chargeChronique = s28j.length > 0 ? s28j.reduce((a: number, s: any) => a + s.charge, 0) / 28 : chargeAigue
+  const acwr = chargeChronique > 0 ? chargeAigue / chargeChronique : 1.0
+
+  // Garde densité absolue : beaucoup de séances + forme basse = signal d'alerte
+  if (s7j.length >= 6 && formeMoy < 55)
+    return { label: "Volume élevé", message: "Beaucoup de séances cette semaine et forme en baisse — pense à récupérer", couleur: "#FF9800" }
+
+  // Seuils ACWR : zone productive jusqu'à 1.5, alarme à partir de 2.0
+  if (acwr > 2.0 && formeMoy < 45) return { label: "Surmenage détecté", message: "Repos obligatoire — ton corps est en surcharge", couleur: "#F44336" }
+  if (acwr > 1.5) return { label: "Charge élevée", message: "Semaine chargée — surveille ta récupération", couleur: "#FF9800" }
+  if (acwr < 0.8 && formeMoy < 50) return { label: "Récupération", message: "Charge faible, forme basse — récupération en cours", couleur: "var(--ft-muted)" }
+  if (formeMoy >= 70 && acwr >= 0.8 && acwr <= 1.5) return { label: "Forme optimale", message: "Charge équilibrée et forme au top — continue !", couleur: "var(--ft-cardio)" }
+  if (acwr >= 1.0 && acwr <= 1.5 && formeMoy >= 50) return { label: "En progression", message: "Charge productive — c'est le bon rythme !", couleur: "var(--ft-snc)" }
+  return { label: "Maintenance", message: "Charge stable — maintiens le rythme", couleur: "#FFC107" }
+}
+
+const getCouleurForme = (v: number) => {
+  if (v >= 75) return "var(--ft-cardio)"
+  if (v >= 60) return "#FFC107"
+  if (v >= 40) return "#FF9800"
+  return "#F44336"
+}
+
+const getCouleurCharge = (v: number) => {
+  if (v <= 30) return "var(--ft-snc)"
+  if (v <= 60) return "var(--ft-cardio)"
+  if (v <= 90) return "#FF9800"
+  return "#F44336"
 }
 
 export default function App() {
@@ -65,113 +67,189 @@ export default function App() {
 
   const seances = JSON.parse(localStorage.getItem("seances") || "[]")
 
-  // Charge : moyenne par séance sur les 7 derniers jours
   const maintenant = new Date()
   const diffJours = (d: string) =>
     (maintenant.getTime() - new Date(d).getTime()) / (1000 * 60 * 60 * 24)
+
   const seances7j = seances.filter((s: any) => s.charge !== undefined && diffJours(s.date) <= 7)
   const chargeHebdo = seances7j.length > 0
     ? Math.round(seances7j.reduce((a: number, s: any) => a + s.charge, 0) / seances7j.length)
     : null
 
-  // Forme : moyenne des 3 dernières séances
   const avecForme = seances.filter((s: any) => s.forme !== undefined)
   const formeMoyenne = avecForme.length > 0
     ? Math.round(avecForme.slice(0, 3).reduce((a: number, s: any) => a + s.forme, 0) / Math.min(3, avecForme.length))
     : null
 
+  // Sous-scores pour l'orbe (3 dernières séances avec sous-scores)
+  const avecSousScores = seances.filter((s: any) => s.score_snc !== undefined)
+  const orbSnc = avecSousScores.length > 0
+    ? Math.round(avecSousScores.slice(0, 3).reduce((a: number, s: any) => a + s.score_snc, 0) / Math.min(3, avecSousScores.length))
+    : 50
+  const orbMuscle = avecSousScores.length > 0
+    ? Math.round(avecSousScores.slice(0, 3).reduce((a: number, s: any) => a + s.score_musculaire, 0) / Math.min(3, avecSousScores.length))
+    : 50
+  const orbCardio = avecSousScores.length > 0
+    ? Math.round(avecSousScores.slice(0, 3).reduce((a: number, s: any) => a + s.score_cardio, 0) / Math.min(3, avecSousScores.length))
+    : 50
+
   const statut = getStatut(seances)
+  const aDonnees = chargeHebdo !== null || formeMoyenne !== null
 
   return (
-    <div style={{ maxWidth: "480px", margin: "0 auto", minHeight: "100vh", position: "relative", paddingBottom: "80px" }}>
+    <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", position: "relative", paddingBottom: 88 }}>
 
-      {/* ⚙️ Bouton paramètres */}
+      {/* Bouton paramètres */}
       <button onClick={() => setParametresOuverts(true)} style={{
-        position: "fixed", top: "16px", right: "16px", zIndex: 90,
-        backgroundColor: "#1e1e1e", border: "1px solid #2a2a2a", borderRadius: "50%",
-        width: "42px", height: "42px", fontSize: "18px", cursor: "pointer",
-        display: "flex", alignItems: "center", justifyContent: "center"
+        position: "fixed", top: 16, right: 16, zIndex: 90,
+        background: "var(--ft-card)", border: "none",
+        borderRadius: "var(--ft-r-orb)", width: 42, height: 42,
+        fontSize: 18, cursor: "pointer",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: "var(--ft-shadow-soft)"
       }}>⚙️</button>
 
       {/* PAGE ACCUEIL */}
       {pageActive === "accueil" && (
-        <div style={{ padding: "20px" }}>
+        <div style={{ padding: "24px 20px" }}>
 
-          {/* Saisie pseudo */}
+          {/* Onboarding — saisie pseudo */}
           {!pseudoSaisi && (
-            <div style={{ backgroundColor: "#1e1e1e", borderRadius: "16px", padding: "32px", marginBottom: "24px", textAlign: "center" }}>
-              <p style={{ fontSize: "20px", marginBottom: "20px" }}>👋 Bienvenue !</p>
-              <p style={{ fontSize: "14px", color: "#888", marginBottom: "16px" }}>Comment tu t'appelles ?</p>
-              <input type="text" placeholder="Ton prénom..." value={pseudo}
+            <div style={{
+              background: "var(--ft-card)", borderRadius: "var(--ft-r-card)",
+              padding: 32, marginBottom: 24, textAlign: "center",
+              boxShadow: "var(--ft-shadow-soft)"
+            }}>
+              <p style={{ fontFamily: "var(--ft-font-display)", fontSize: 22, fontWeight: 700, marginBottom: 8 }}>
+                Bienvenue 👋
+              </p>
+              <p style={{ fontSize: 14, color: "var(--ft-muted)", marginBottom: 20 }}>Comment tu t'appelles ?</p>
+              <input
+                type="text"
+                placeholder="Ton prénom…"
+                value={pseudo}
                 onChange={e => setPseudo(e.target.value)}
-                style={{ width: "100%", padding: "12px", backgroundColor: "#2a2a2a", border: "1px solid #333", borderRadius: "8px", color: "white", fontSize: "16px", marginBottom: "12px", outline: "none" }} />
-              <button onClick={() => { if (pseudo.trim()) { localStorage.setItem("pseudo", pseudo); setPseudoSaisi(true) } }}
-                style={{ width: "100%", padding: "14px", backgroundColor: "#4CAF50", color: "white", border: "none", borderRadius: "10px", fontSize: "16px", fontWeight: "bold", cursor: "pointer" }}>
-                C'est parti ! 🚀
+                style={{
+                  width: "100%", padding: "12px 16px",
+                  background: "var(--ft-surface)", border: "none",
+                  borderRadius: "var(--ft-r-input)", color: "var(--ft-ink)",
+                  fontSize: 16, marginBottom: 12, outline: "none",
+                  fontFamily: "var(--ft-font-body)"
+                }}
+              />
+              <button
+                onClick={() => { if (pseudo.trim()) { localStorage.setItem("pseudo", pseudo); setPseudoSaisi(true) } }}
+                style={{
+                  width: "100%", padding: "14px 22px",
+                  background: "var(--ft-ink)", color: "#fff", border: "none",
+                  borderRadius: "var(--ft-r-btn)", fontSize: 15, fontWeight: 600,
+                  cursor: "pointer", fontFamily: "var(--ft-font-body)",
+                  boxShadow: "var(--ft-shadow-soft)"
+                }}
+              >
+                C'est parti !
               </button>
             </div>
           )}
 
           {/* En-tête */}
-          <div style={{ marginBottom: "28px", paddingTop: "8px" }}>
-            <h1 style={{ fontSize: "26px", fontWeight: "bold", marginBottom: "16px", color: "#ffffff" }}>
+          <div style={{ marginBottom: 32 }}>
+            <h1 style={{
+              fontFamily: "var(--ft-font-display)", fontSize: 28, fontWeight: 700,
+              color: "var(--ft-ink)", marginBottom: 16, letterSpacing: "-0.02em"
+            }}>
               {pseudoSaisi ? `Bonjour ${pseudo} 👋` : "Bonjour 👋"}
             </h1>
             <button onClick={() => setFormulaireOuvert(true)} style={{
-              width: "100%", padding: "16px", backgroundColor: "#4CAF50",
-              color: "white", border: "none", borderRadius: "12px",
-              fontSize: "16px", fontWeight: "bold", cursor: "pointer"
-            }}>
-              + Nouvelle séance
+              width: "100%", padding: "15px 22px",
+              background: "var(--ft-snc)", color: "#fff", border: "none",
+              borderRadius: "var(--ft-r-btn)", fontSize: 15, fontWeight: 700,
+              cursor: "pointer", fontFamily: "var(--ft-font-body)",
+              boxShadow: "0 8px 24px rgba(124,111,240,0.35)", transition: "transform 0.15s ease",
+              letterSpacing: "0.01em"
+            }}
+              onMouseEnter={e => (e.currentTarget.style.transform = "translateY(-2px)")}
+              onMouseLeave={e => (e.currentTarget.style.transform = "translateY(0)")}
+            >
+              + Enregistrer ma séance
             </button>
           </div>
 
-          {/* Tuiles Charge + Forme */}
-          {(chargeHebdo !== null || formeMoyenne !== null) ? (
+          {aDonnees ? (
             <>
-              <div style={{ display: "flex", gap: "12px", marginBottom: "12px" }}>
-                {/* Charge */}
-                <div style={{
-                  flex: 1, backgroundColor: "#1e1e1e", borderRadius: "16px", padding: "20px",
-                  textAlign: "center", border: `2px solid ${chargeHebdo !== null ? getCouleurCharge(chargeHebdo) : "#2a2a2a"}`
-                }}>
-                  <p style={{ fontSize: "11px", color: "#888", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "1px" }}>Charge</p>
-                  <p style={{ fontSize: "52px", fontWeight: "bold", color: chargeHebdo !== null ? getCouleurCharge(chargeHebdo) : "#555", margin: 0, lineHeight: 1 }}>
-                    {chargeHebdo ?? "—"}
-                  </p>
-                  <p style={{ fontSize: "10px", color: "#555", marginTop: "6px" }}>moy. / séance · 7j</p>
-                </div>
-                {/* Forme */}
-                <div style={{
-                  flex: 1, backgroundColor: "#1e1e1e", borderRadius: "16px", padding: "20px",
-                  textAlign: "center", border: `2px solid ${formeMoyenne !== null ? getCouleurForme(formeMoyenne) : "#2a2a2a"}`
-                }}>
-                  <p style={{ fontSize: "11px", color: "#888", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "1px" }}>Forme</p>
-                  <p style={{ fontSize: "52px", fontWeight: "bold", color: formeMoyenne !== null ? getCouleurForme(formeMoyenne) : "#555", margin: 0, lineHeight: 1 }}>
-                    {formeMoyenne ?? "—"}
-                  </p>
-                  <p style={{ fontSize: "10px", color: "#555", marginTop: "6px" }}>moy. 3 dernières séances</p>
+              {/* Orbe signature */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 32 }}>
+                <SensationOrb snc={orbSnc} muscle={orbMuscle} cardio={orbCardio} size={200} label="sensation" />
+                <div style={{ display: "flex", gap: 20, marginTop: 20 }}>
+                  {[
+                    { label: "SNC", val: orbSnc, color: "var(--ft-snc)" },
+                    { label: "Muscu", val: orbMuscle, color: "var(--ft-muscle)" },
+                    { label: "Cardio", val: orbCardio, color: "var(--ft-cardio)" },
+                  ].map(ax => (
+                    <div key={ax.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                      <div style={{ width: 10, height: 10, borderRadius: "50%", background: ax.color }} />
+                      <span style={{ fontFamily: "var(--ft-font-data)", fontSize: 14, color: "var(--ft-ink)" }}>{ax.val}</span>
+                      <span style={{ fontSize: 11, color: "var(--ft-muted)" }}>{ax.label}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Statut d'entraînement */}
+              {/* Tuiles Charge + Forme */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                <div style={{
+                  background: "var(--ft-card)", borderRadius: "var(--ft-r-card)",
+                  padding: 20, boxShadow: "var(--ft-shadow-soft)"
+                }}>
+                  <p style={{ fontSize: 12, color: "var(--ft-muted)", letterSpacing: "0.03em", marginBottom: 8 }}>charge</p>
+                  <p style={{
+                    fontFamily: "var(--ft-font-data)", fontSize: 42, fontWeight: 500,
+                    color: chargeHebdo !== null ? getCouleurCharge(chargeHebdo) : "var(--ft-muted)",
+                    lineHeight: 1, margin: 0
+                  }}>
+                    {chargeHebdo ?? "—"}
+                  </p>
+                  <p style={{ fontSize: 11, color: "var(--ft-muted)", marginTop: 6 }}>moy. / séance · 7j</p>
+                </div>
+                <div style={{
+                  background: "var(--ft-card)", borderRadius: "var(--ft-r-card)",
+                  padding: 20, boxShadow: "var(--ft-shadow-soft)"
+                }}>
+                  <p style={{ fontSize: 12, color: "var(--ft-muted)", letterSpacing: "0.03em", marginBottom: 8 }}>forme</p>
+                  <p style={{
+                    fontFamily: "var(--ft-font-data)", fontSize: 42, fontWeight: 500,
+                    color: formeMoyenne !== null ? getCouleurForme(formeMoyenne) : "var(--ft-muted)",
+                    lineHeight: 1, margin: 0
+                  }}>
+                    {formeMoyenne ?? "—"}
+                  </p>
+                  <p style={{ fontSize: 11, color: "var(--ft-muted)", marginTop: 6 }}>moy. 3 dernières</p>
+                </div>
+              </div>
+
+              {/* Badge statut */}
               {statut && (
                 <div style={{
-                  backgroundColor: "#1e1e1e", borderRadius: "12px", padding: "16px",
-                  border: `1px solid ${statut.couleur}`, marginBottom: "8px"
+                  background: "var(--ft-card)", borderRadius: "var(--ft-r-card)",
+                  padding: "16px 20px", boxShadow: "var(--ft-shadow-soft)"
                 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
-                    <span style={{ fontSize: "18px" }}>{statut.emoji}</span>
-                    <p style={{ fontSize: "15px", fontWeight: "bold", color: statut.couleur, margin: 0 }}>{statut.label}</p>
-                  </div>
-                  <p style={{ fontSize: "13px", color: "#888", margin: 0, paddingLeft: "28px" }}>{statut.message}</p>
+                  <p style={{
+                    fontSize: 14, fontWeight: 600, color: statut.couleur,
+                    marginBottom: 4
+                  }}>{statut.label}</p>
+                  <p style={{ fontSize: 13, color: "var(--ft-muted)", margin: 0 }}>{statut.message}</p>
                 </div>
               )}
             </>
           ) : (
-            <div style={{ backgroundColor: "#1e1e1e", borderRadius: "16px", padding: "32px", textAlign: "center", border: "1px solid #2a2a2a" }}>
-              <p style={{ fontSize: "32px", marginBottom: "12px" }}>🏃</p>
-              <p style={{ fontSize: "13px", color: "#555" }}>Ajoute tes premières séances pour voir ta charge et ta forme</p>
+            <div style={{
+              background: "var(--ft-card)", borderRadius: "var(--ft-r-card)",
+              padding: 40, textAlign: "center", boxShadow: "var(--ft-shadow-soft)"
+            }}>
+              <p style={{ fontSize: 40, marginBottom: 16 }}>🏃</p>
+              <p style={{ fontSize: 14, color: "var(--ft-muted)", lineHeight: 1.6 }}>
+                Aucune séance encore.<br />Lance-toi, on enregistre ta première sensation.
+              </p>
             </div>
           )}
 
@@ -184,30 +262,42 @@ export default function App() {
       {/* PAGE PROFIL */}
       {pageActive === "profil" && <Profil key={pageActive} />}
 
-      {/* BARRE DE NAVIGATION */}
+      {/* BARRE DE NAVIGATION — 3 bulles rondes */}
       <div style={{
         position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
-        width: "100%", maxWidth: "480px", backgroundColor: "#1a1a1a",
-        borderTop: "1px solid #2a2a2a", display: "flex",
-        justifyContent: "space-around", padding: "12px 0", zIndex: 50
+        width: "100%", maxWidth: 480,
+        background: "var(--ft-card)",
+        borderTop: "1px solid var(--ft-line)",
+        display: "flex", justifyContent: "center", alignItems: "center",
+        gap: 16, padding: "12px 24px 20px", zIndex: 50
       }}>
         {[
-          { id: "accueil", emoji: "🏠", label: "Accueil" },
-          { id: "historique", emoji: "📋", label: "Historique" },
-          { id: "profil", emoji: "👤", label: "Profil" },
-        ].map(page => (
-          <button key={page.id} onClick={() => setPageActive(page.id)} style={{
-            display: "flex", flexDirection: "column", alignItems: "center",
-            backgroundColor: "transparent", border: "none", cursor: "pointer",
-            color: pageActive === page.id ? "#4CAF50" : "#555", gap: "4px"
-          }}>
-            <span style={{ fontSize: "22px" }}>{page.emoji}</span>
-            <span style={{ fontSize: "11px" }}>{page.label}</span>
-          </button>
-        ))}
+          { id: "accueil", icon: "🏠", label: "Accueil" },
+          { id: "historique", icon: "📋", label: "Historique" },
+          { id: "profil", icon: "👤", label: "Profil" },
+        ].map(page => {
+          const actif = pageActive === page.id
+          return (
+            <button key={page.id} onClick={() => setPageActive(page.id)} style={{
+              flex: 1, display: "flex", flexDirection: "column",
+              alignItems: "center", gap: 5, border: "none", cursor: "pointer",
+              background: actif ? "var(--ft-snc)" : "var(--ft-surface)",
+              borderRadius: 20, padding: "10px 8px",
+              boxShadow: actif ? "0 4px 16px rgba(124,111,240,0.35)" : "var(--ft-shadow-soft)",
+              transition: "all 0.2s ease",
+              fontFamily: "var(--ft-font-body)"
+            }}>
+              <span style={{ fontSize: 20 }}>{page.icon}</span>
+              <span style={{
+                fontSize: 11, fontWeight: 600,
+                color: actif ? "#fff" : "var(--ft-muted)"
+              }}>{page.label}</span>
+            </button>
+          )
+        })}
       </div>
 
-      {formulaireOuvert && <Formulaire onFermer={() => { setFormulaireOuvert(false) }} />}
+      {formulaireOuvert && <Formulaire onFermer={() => setFormulaireOuvert(false)} />}
       {parametresOuverts && <Parametres onFermer={() => setParametresOuverts(false)} />}
 
     </div>
