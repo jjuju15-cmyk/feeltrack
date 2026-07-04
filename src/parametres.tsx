@@ -308,6 +308,7 @@ export default function Parametres({ onFermer }: { onFermer: () => void }) {
         {/* SECTION DONNÉES */}
         {section === "donnees" && (
           <div>
+            {/* Stockage */}
             <div style={{
               background: "var(--ft-card)", borderRadius: "var(--ft-r-card)",
               padding: 16, marginBottom: 12, boxShadow: "var(--ft-shadow-soft)"
@@ -315,14 +316,149 @@ export default function Parametres({ onFermer }: { onFermer: () => void }) {
               <p style={{ fontSize: 14, fontWeight: 500, color: "var(--ft-ink)", marginBottom: 6 }}>Stockage local</p>
               {(() => {
                 const seances = JSON.parse(localStorage.getItem("seances") || "[]")
+                const lastExport = localStorage.getItem("lastExport")
+                const joursDepuisExport = lastExport
+                  ? Math.floor((Date.now() - parseInt(lastExport)) / (1000 * 60 * 60 * 24))
+                  : null
                 return (
-                  <p style={{ fontSize: 13, color: "var(--ft-muted)", margin: 0 }}>
-                    {seances.length} séance{seances.length > 1 ? "s" : ""} enregistrée{seances.length > 1 ? "s" : ""} sur cet appareil
-                  </p>
+                  <>
+                    <p style={{ fontSize: 13, color: "var(--ft-muted)", margin: "0 0 4px" }}>
+                      {seances.length} séance{seances.length > 1 ? "s" : ""} enregistrée{seances.length > 1 ? "s" : ""} sur cet appareil
+                    </p>
+                    {joursDepuisExport !== null && joursDepuisExport > 30 && (
+                      <p style={{ fontSize: 12, color: "#FF9800", margin: 0 }}>
+                        ⚠️ Dernier export il y a {joursDepuisExport} jours — pense à sauvegarder.
+                      </p>
+                    )}
+                    {joursDepuisExport === null && seances.length > 0 && (
+                      <p style={{ fontSize: 12, color: "var(--ft-muted)", margin: 0 }}>
+                        Pas encore exporté — pense à faire une sauvegarde.
+                      </p>
+                    )}
+                  </>
                 )
               })()}
             </div>
 
+            {/* Export */}
+            <div style={{
+              background: "var(--ft-card)", borderRadius: "var(--ft-r-card)",
+              padding: 16, marginBottom: 12, boxShadow: "var(--ft-shadow-soft)"
+            }}>
+              <p style={{ fontSize: 14, fontWeight: 500, color: "var(--ft-ink)", marginBottom: 4 }}>Exporter mes données</p>
+              <p style={{ fontSize: 12, color: "var(--ft-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+                Télécharge toutes tes séances, paramètres et objectifs en un fichier JSON.
+              </p>
+              <button onClick={() => {
+                const data = {
+                  version: 1,
+                  exportDate: new Date().toISOString(),
+                  seances: JSON.parse(localStorage.getItem("seances") || "[]"),
+                  checkins: JSON.parse(localStorage.getItem("checkins") || "[]"),
+                  profil: {
+                    pseudo: localStorage.getItem("pseudo"),
+                    age: localStorage.getItem("age"),
+                    poids: localStorage.getItem("poids"),
+                    taille: localStorage.getItem("taille"),
+                    sportPrincipal: localStorage.getItem("sportPrincipal"),
+                  },
+                  objectifs: {
+                    obj_distance: localStorage.getItem("obj_distance"),
+                    obj_seances: localStorage.getItem("obj_seances"),
+                    obj_score: localStorage.getItem("obj_score"),
+                  },
+                  coefficients: JSON.parse(localStorage.getItem("coefficients") || "null"),
+                  periodes_off: JSON.parse(localStorage.getItem("periodes_off") || "[]"),
+                }
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement("a")
+                const today = new Date().toISOString().split("T")[0]
+                a.href = url; a.download = `feeltrack-backup-${today}.json`
+                a.click(); URL.revokeObjectURL(url)
+                localStorage.setItem("lastExport", Date.now().toString())
+                afficherMessage("Export téléchargé ✓")
+              }} style={{
+                width: "100%", padding: 13,
+                background: "var(--ft-snc)", color: "#fff", border: "none",
+                borderRadius: "var(--ft-r-btn)", fontSize: 14, fontWeight: 600,
+                cursor: "pointer", fontFamily: "var(--ft-font-body)",
+                boxShadow: "0 4px 16px rgba(124,111,240,0.3)"
+              }}>
+                Télécharger la sauvegarde
+              </button>
+            </div>
+
+            {/* Import */}
+            <div style={{
+              background: "var(--ft-card)", borderRadius: "var(--ft-r-card)",
+              padding: 16, marginBottom: 24, boxShadow: "var(--ft-shadow-soft)"
+            }}>
+              <p style={{ fontSize: 14, fontWeight: 500, color: "var(--ft-ink)", marginBottom: 4 }}>Importer des données</p>
+              <p style={{ fontSize: 12, color: "var(--ft-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+                Restaure une sauvegarde JSON. Tu peux fusionner avec les données existantes ou tout remplacer.
+              </p>
+              <input type="file" accept=".json" id="import-json" style={{ display: "none" }}
+                onChange={e => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  const reader = new FileReader()
+                  reader.onload = ev => {
+                    try {
+                      const data = JSON.parse(ev.target?.result as string)
+                      if (!data.version || !Array.isArray(data.seances)) {
+                        afficherMessage("❌ Fichier invalide — structure incorrecte")
+                        return
+                      }
+                      const mode = window.confirm(
+                        `${data.seances.length} séances trouvées.\n\nOK = Fusionner avec tes données actuelles\nAnnuler = Remplacer toutes tes données`
+                      )
+                      if (mode) {
+                        // Fusion : dédoublonnage par id
+                        const existantes = JSON.parse(localStorage.getItem("seances") || "[]")
+                        const idsExistants = new Set(existantes.map((s: any) => s.id))
+                        const nouvelles = data.seances.filter((s: any) => !idsExistants.has(s.id))
+                        localStorage.setItem("seances", JSON.stringify([...existantes, ...nouvelles]))
+                        if (data.checkins) {
+                          const existantsCI = JSON.parse(localStorage.getItem("checkins") || "[]")
+                          const datesExistants = new Set(existantsCI.map((c: any) => c.date))
+                          const nouveauxCI = data.checkins.filter((c: any) => !datesExistants.has(c.date))
+                          localStorage.setItem("checkins", JSON.stringify([...existantsCI, ...nouveauxCI]))
+                        }
+                        afficherMessage(`✓ ${nouvelles.length} séances importées (fusion)`)
+                      } else {
+                        // Remplacement total
+                        localStorage.setItem("seances", JSON.stringify(data.seances))
+                        if (data.checkins) localStorage.setItem("checkins", JSON.stringify(data.checkins))
+                        if (data.profil) {
+                          Object.entries(data.profil).forEach(([k, v]) => v && localStorage.setItem(k, v as string))
+                        }
+                        if (data.objectifs) {
+                          Object.entries(data.objectifs).forEach(([k, v]) => v && localStorage.setItem(k, v as string))
+                        }
+                        if (data.coefficients) localStorage.setItem("coefficients", JSON.stringify(data.coefficients))
+                        afficherMessage(`✓ ${data.seances.length} séances restaurées`)
+                      }
+                    } catch {
+                      afficherMessage("❌ Erreur de lecture du fichier")
+                    }
+                    e.target.value = ""
+                  }
+                  reader.readAsText(file)
+                }}
+              />
+              <button onClick={() => document.getElementById("import-json")?.click()} style={{
+                width: "100%", padding: 13,
+                background: "var(--ft-surface)", color: "var(--ft-ink)",
+                border: "1.5px solid var(--ft-line)", borderRadius: "var(--ft-r-btn)",
+                fontSize: 14, fontWeight: 500, cursor: "pointer",
+                fontFamily: "var(--ft-font-body)"
+              }}>
+                Choisir un fichier de sauvegarde…
+              </button>
+            </div>
+
+            {/* Version */}
             <div style={{
               background: "var(--ft-card)", borderRadius: "var(--ft-r-card)",
               padding: 16, marginBottom: 24, boxShadow: "var(--ft-shadow-soft)"

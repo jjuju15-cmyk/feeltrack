@@ -361,12 +361,24 @@ export default function Profil() {
       )}
 
       {/* ONGLET OBJECTIFS */}
-      {onglet === "objectifs" && (
+      {onglet === "objectifs" && (() => {
+        const maintenant = new Date()
+        const moisCourant = `${maintenant.getFullYear()}-${String(maintenant.getMonth() + 1).padStart(2, "0")}`
+        const seancesMois = seances.filter((s: any) => s.date?.startsWith(moisCourant))
+        const distanceMois = Math.round(seancesMois.reduce((a: number, s: any) => a + (parseFloat(s.distance) || 0), 0))
+        const nbSeancesMois = seancesMois.length
+        const scoreMoisRaw = seancesMois.length > 0
+          ? Math.round(seancesMois.reduce((a: number, s: any) => a + (s.forme ?? s.score ?? 0), 0) / seancesMois.length)
+          : 0
+        const objDist = parseInt(localStorage.getItem("obj_distance") || "100")
+        const objSeances = parseInt(localStorage.getItem("obj_seances") || "12")
+        const objScore = parseInt(localStorage.getItem("obj_score") || "75")
+        return (
         <div>
           {[
-            { label: "Distance mensuelle", emoji: "📏", actuel: Math.round(totalDistance), objectif: 100, unite: "km" },
-            { label: "Séances ce mois", emoji: "🗓️", actuel: totalSeances, objectif: 12, unite: "séances" },
-            { label: "Score de forme cible", emoji: "🎯", actuel: scoreMoyen, objectif: 75, unite: "/100" },
+            { label: "Distance ce mois", emoji: "📏", actuel: distanceMois, objectif: objDist, unite: "km" },
+            { label: "Séances ce mois", emoji: "🗓️", actuel: nbSeancesMois, objectif: objSeances, unite: "séances" },
+            { label: "Forme moyenne ce mois", emoji: "🎯", actuel: scoreMoisRaw, objectif: objScore, unite: "/100" },
           ].map(obj => {
             const pct = Math.min(100, Math.round((obj.actuel / obj.objectif) * 100))
             const couleur = pct >= 100 ? "var(--ft-cardio)" : pct >= 60 ? "#FFC107" : "#FF9800"
@@ -395,7 +407,8 @@ export default function Profil() {
             )
           })}
         </div>
-      )}
+        )
+      })()}
 
       {/* ONGLET CALENDRIER */}
       {onglet === "calendrier" && (
